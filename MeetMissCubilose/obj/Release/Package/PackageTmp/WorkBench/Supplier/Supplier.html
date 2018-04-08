@@ -1,0 +1,244 @@
+﻿<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="https://apps.bdimg.com/libs/jquerymobile/1.4.5/jquery.mobile-1.4.5.min.css">
+    <link rel="stylesheet" href="../../themes/skyd.min.css" />
+    <link rel="stylesheet" href="../../themes/jquery.mobile.icons.min.css" />
+    <link rel="stylesheet" href="https://code.jquery.com/mobile/1.4.3/jquery.mobile.structure-1.4.3.min.css" />
+    <script src="https://apps.bdimg.com/libs/jquery/1.10.2/jquery.min.js"></script>
+    <script src="https://apps.bdimg.com/libs/jquerymobile/1.4.5/jquery.mobile-1.4.5.min.js"></script>
+    <title>供应商信息</title>
+    <stytle>
+        
+    </stytle>
+    <script>
+        $(document).on("pagecreate", "#pageList", function () {
+            if (localStorage.getItem("ManagerID") == undefined || localStorage.getItem("ManagerID") == null) {
+                location.href = "/login.html";
+            }
+            $.get("/api/Supplier/GetSupplierList", function (rsp) {
+                var html = "";
+                if (rsp != null && rsp != undefined) {
+                    $.each(rsp, function (i) {
+                        html += "<li><span style='display:none;float:right;background-color:#FF0000;color:#ffffff;width:20%;height:43.38px;text-align:center;line-height:43.38px;'>删 除</span><a href='#pageSupplier' data-id='" + rsp[i].supplier_id + "'>" + rsp[i].supplier_name + "</a></li>";
+                    });
+                }
+                $("#mList").html(html).listview('refresh');
+            });
+            //绑定点击列表事件
+            $("#mList").on("tap", "a", function () {
+                var id = $(this).attr("data-id");
+                $.get("/api/Supplier/GetSupplier", { id: id }, function (rsp) {
+                    if (rsp != null && rsp != undefined) {
+                        $("#tid").html(rsp.supplier_id);
+                        $("#tname").html(rsp.supplier_name);
+                        $("#tperson").html(rsp.supplier_contacts);
+                        $("#tphone").html(rsp.supplier_phone);
+                        $("#taddress").html(rsp.supplier_addr);
+                        $("#tmemo").html(rsp.memo);
+                    }
+                });
+            });
+            //绑定向左滑动列表事件
+            $("#mList").on("swipeleft", "a", function () {
+                $(this).siblings("span").show();
+            });
+            //绑定向右滑动列表事件
+            $("#mList").on("swiperight", "a", function () {
+                $(this).siblings("span").hide();
+            });
+            //绑定点击删除事件
+            $("#mList").on("tap", "span", function () {
+                var id = $(this).siblings("a").attr("data-id");
+                $.post("/api/Supplier/DeleteSupplier", { id: id }, function (rsp) {
+                    if (rsp == "成功") {
+                        $("#deletePopup").html("<p>删除成功！</p>");
+                        $("#popup_delete").click();
+                        setTimeout('location.href = "../Supplier/Supplier.html"', 1200);
+                    } else {
+                        $("#deletePopup").html("<p>有其他信息包含该供应商信息，无法删除！</p>");
+                        $("#popup_delete").click();
+                    }
+                });
+            });
+            //绑定搜索按钮
+            $("#searchButton").on("tap", function () {
+                var name = $("#searchName").val();
+                $.get("/api/Supplier/GetSearchSupplierList", { name: name }, function (rsp) {
+                    var html = "";
+                    if (rsp != null && rsp != undefined) {
+                        $.each(rsp, function (i) {
+                            html += "<li><span style='display:none;float:right;background-color:#FF0000;color:#ffffff;width:20%;height:43.38px;text-align:center;line-height:43.38px;'>删 除</span>";//滑动显示删除
+                            html += "<a href='#pageSupplier' data-id='" + rsp[i].supplier_id + "'>" + rsp[i].supplier_name + "</a></li>";
+                        });
+                    }
+                    $("#mList").html(html).listview('refresh');
+                });
+                $("#searchPopup").popup("close");
+            });
+        });
+        //初始化修改页面
+        $(document).on("pagecreate", "#pageEdit", function () {
+            $("#edit_name").val($("#tname").text());
+            $("#edit_person").val($("#tperson").text());
+            $("#edit_phone").val($("#tphone").text());
+            $("#edit_address").val($("#taddress").text());
+            $("#edit_memo").val($("#tmemo").text());
+
+            //绑定提交按钮
+            $("#editButton").on("tap", function () {
+                var name = $("#edit_name").val();
+                if (name == "") {
+                    $("#myPopup_edit").html("<p>名称不能为空！</p>");
+                    $("#popup_edit").click();
+                    setTimeout('$("#myPopup_edit").popup("close")', 1000);
+                    return false;
+                }
+                var person = $("#edit_person").val();
+                var phone = $("#edit_phone").val();
+                var address = $("#edit_address").val();
+                var memo = $("#edit_memo").val();
+                var id = $("#tid").text();
+                $.post("/api/Supplier/UpdateSupplier", { id:id, name: name, person: person, phone: phone, address: address, memo: memo }, function (rsp) {
+                    if (rsp == "成功") {
+                        $("#myPopup_edit").html("<p>修改成功！</p>");
+                        $("#popup_edit").click();
+                        setTimeout('location.href = "../Supplier/Supplier.html"', 1200);
+                    } else {
+                        $("#myPopup_add").html("<p>添加失败,请重试！</p>");
+                        $("#popup_add").click();
+                    }
+                });
+            });
+        });
+        //初始化新增页面
+        $(document).on("pagecreate", "#pageAdd", function () {
+            //绑定提交按钮
+            $("#addButton").on("tap", function () {
+                var name = $("#fullname").val();
+                if (name == "") {
+                    $("#myPopup_add").html("<p>名称不能为空！</p>");
+                    $("#popup_add").click();
+                    setTimeout('$("#myPopup_add").popup("close")', 1000);
+                    return false;
+                }
+                var person = $("#person").val();
+                var phone = $("#phone").val();
+                var address = $("#address").val();
+                var memo = $("#memo").val();
+                $.post("/api/Supplier/AddSupplier", { name: name, person: person, phone: phone, address: address, memo: memo }, function (rsp) {
+                    if (rsp == "成功") {
+                        $("#myPopup_add").html("<p>添加成功！</p>");
+                        $("#popup_add").click();
+                        setTimeout('location.href = "../Supplier/Supplier.html"', 1200);
+                    } else {
+                        $("#myPopup_add").html("<p>添加失败,请重试！</p>");
+                        $("#popup_add").click();
+                    }
+                });
+            });
+        });
+    </script>
+</head>
+<body>    
+    <!--供应商列表页面-->
+    <div data-role="page" id="pageList">
+        <div data-role="header" data-position="fixed">
+            <h1>供应商</h1>
+            <div data-role="navbar">
+                <ul>
+                    <li><a href="#pageAdd" data-icon="plus">添加</a></li>
+                    <li><a href="../../home.html#menuList" data-icon="home" data-ajax="false">管理中心</a></li>
+                    <li><a href="#searchPopup" data-rel="popup" data-position-to="window" data-transition="slidedown" data-icon="search">搜索</a></li>
+                </ul>
+            </div>
+        </div>
+        <div data-role="main" class="ui-content">
+            <ul data-role="listview" id="mList"></ul>            
+            <!--删除提示框-->
+            <a href="#deletePopup" data-rel="popup" id="popup_delete" style="display:none" data-position-to="window"></a>
+            <div data-role="popup" id="deletePopup"></div>   
+            <!--搜索对话框-->
+            <div data-role="popup" id="searchPopup">
+                <div data-role="main" class="ui-content">
+                    <input type="search" name="searchName" id="searchName" placeholder="搜索供应商...">
+                    <input type="button" id="searchButton" value="搜索">
+                </div>
+            </div>          
+        </div>
+        <div data-role="footer" style="text-align: center" data-position="fixed">
+            <p>CopyRight &copy;MeetMissCubilose</p>
+        </div>
+    </div>
+
+    <!--供应商页面-->
+    <div data-role="page" id="pageSupplier">
+        <div data-role="header" data-add-back-btn="true">
+            <h1>供应商信息</h1><a href="#pageEdit" class="ui-btn-right" data-icon="tag" >修改</a>
+        </div>
+        <div data-role="main" class="ui-content">
+            <ul data-role="listview">
+                <li style="background-color:#F6F6F6"><div><span style="font-weight:bolder">ID</span><div style="float:right;width:75%"><span style="float:right;white-space:pre-wrap;font-weight:lighter;" id="tid"></span></div></div></li>
+                <li style="background-color:#F6F6F6"><div><span style="font-weight:bolder">名称</span><div style="float:right;width:75%"><span style="float:right;white-space:pre-wrap;font-weight:lighter;" id="tname"></span></div></div></li>
+                <li style="background-color:#F6F6F6"><div><span style="font-weight:bolder">联系人</span><div style="float:right;width:75%"><span style="float:right;white-space:pre-wrap;font-weight:lighter;" id="tperson"></span></div></div></li>
+                <li style="background-color:#F6F6F6"><div><span style="font-weight:bolder">联系电话</span><div style="float:right;width:75%"><span style="float:right;white-space:pre-wrap;font-weight:lighter;" id="tphone"></span></div></div></li>
+                <li style="background-color:#F6F6F6"><div><span style="font-weight:bolder">联系地址</span><div style="float:right;width:75%"><span style="float:right;white-space:pre-wrap;font-weight:lighter;" id="taddress"></span></div></div></li>
+                <li style="background-color:#F6F6F6"><div><span style="font-weight:bolder">备注</span><div style="float:right;width:75%"><span style="float:right;white-space:pre-wrap;font-weight:lighter;" id="tmemo"></span></div></div></li>
+            </ul>
+        </div>
+        <div data-role="footer" style="text-align: center" data-position="fixed">
+            <p>CopyRight &copy;MeetMissCubilose</p>
+        </div>
+    </div>
+
+    <!--新增供应商页面-->
+    <div data-role="page" id="pageAdd">
+        <div data-role="header" data-add-back-btn="true">
+            <h1>新增供应商</h1>            
+        </div>
+        <div data-role="main" class="ui-content">
+            <label for="fullname">名称：</label>
+            <input type="text" name="fullname" id="fullname">
+            <label for="person">联系人：</label>
+            <input type="text" name="person" id="person">
+            <label for="phone">联系电话：</label>
+            <input type="tel" name="phone" id="phone">
+            <label for="address">联系地址：</label>
+            <input type="text" name="address" id="address" data-clear-btn="true">
+            <label for="memo">备注：</label>
+            <textarea id="memo"></textarea>
+            <input type="button" id="addButton" value="提交">            
+            <!--提示框-->
+            <a href="#myPopup_add" data-rel="popup" id="popup_add" style="display:none" data-position-to="window"></a>
+            <div data-role="popup" id="myPopup_add"></div>            
+        </div>
+        <div data-role="footer" style="text-align: center" data-position="fixed">
+            <p>CopyRight &copy;MeetMissCubilose</p>
+        </div>
+    </div>
+
+    <!--修改供应商页面-->
+    <div data-role="page" id="pageEdit">
+        <div data-role="header" data-add-back-btn="true">
+            <h1>修改供应商</h1>
+        </div>
+        <div data-role="main" class="ui-content">
+            <label for="edit_name">名称：</label>
+            <input type="text" name="edit_name" id="edit_name">
+            <label for="edit_person">联系人：</label>
+            <input type="text" name="edit_person" id="edit_person">
+            <label for="phone">联系电话：</label>
+            <input type="tel" name="edit_phone" id="edit_phone">
+            <label for="edit_address">联系地址：</label>
+            <input type="text" name="edit_address" id="edit_address" data-clear-btn="true">
+            <label for="edit_memo">备注：</label>
+            <textarea id="edit_memo"></textarea>
+            <input type="button" id="editButton" value="提交">
+            <!--提示框-->
+            <a href="#myPopup_edit" data-rel="popup" id="popup_edit" style="display:none" data-position-to="window"></a>
+            <div data-role="popup" id="myPopup_edit"></div>
+        </div>
+        <div data-role="footer" style="text-align: center" data-position="fixed">
+            <p>CopyRight &copy;MeetMissCubilose</p>
+        </div>
+    </div>
+</body>

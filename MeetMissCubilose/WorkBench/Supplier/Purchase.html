@@ -1,0 +1,191 @@
+﻿<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="https://apps.bdimg.com/libs/jquerymobile/1.4.5/jquery.mobile-1.4.5.min.css">
+    <link rel="stylesheet" href="../../themes/skyd.min.css" />
+    <link rel="stylesheet" href="../../themes/jquery.mobile.icons.min.css" />
+    <link rel="stylesheet" href="https://code.jquery.com/mobile/1.4.3/jquery.mobile.structure-1.4.3.min.css" />
+    <script src="https://apps.bdimg.com/libs/jquery/1.10.2/jquery.min.js"></script>
+    <script src="https://apps.bdimg.com/libs/jquerymobile/1.4.5/jquery.mobile-1.4.5.min.js"></script>
+    <title>进货信息</title>
+    <stytle>
+        
+    </stytle>
+    <script>
+        $(document).on("pagecreate", "#pageList", function () {
+            if (localStorage.getItem("ManagerID") == undefined || localStorage.getItem("ManagerID") == null) {
+                location.href = "/login.html";
+            }
+            $.get("/api/Purchase/GetPurchaseList", function (rsp) {
+                var html = "";
+                if (rsp != null && rsp != undefined) {
+                    $.each(rsp, function (i) {
+                        html += "<li><a href='#pagePurchase' data-id='" + rsp[i].id + "'><h2>" + rsp[i].name + "</h2><p>时间：" + rsp[i].date.substring(0,10) + "</p><p>供应商：" + rsp[i].supplierName + "</p></a></li>";
+                    });
+                }
+                $("#mList").html(html).listview('refresh');
+            });
+            //绑定点击列表事件
+            $("#mList").on("tap", "a", function () {
+                var id = $(this).attr("data-id");
+                $.get("/api/Purchase/GetPurchase", { id: id }, function (rsp) {
+                    if (rsp != null && rsp != undefined) {
+                        $("#tname").html(rsp.name);
+                        $("#tdate").html(rsp.date.substring(0, 10));
+                        $("#tsupplier").html(rsp.supplierName);
+                        $("#tnum").html(rsp.num);
+                        $("#tprice").html(rsp.price);
+                        $("#tmoney").html(rsp.money);
+                    }
+                });
+            });
+
+            //绑定搜索按钮
+            $("#searchButton").on("tap", function () {
+                var name = $("#searchName").val();
+                var startDate = $("#startDate").val();
+                var endDate = $("#endDate").val();
+                $.get("/api/Purchase/GetSearchPurchaseList", { name: name, startDate: startDate, endDate: endDate }, function (rsp) {
+                    var html = "";
+                    if (rsp != null && rsp != undefined) {
+                        $.each(rsp, function (i) {
+                            html += "<li><a href='#pagePurchase' data-id='" + rsp[i].id + "'><h2>" + rsp[i].name + "</h2><p>时间：" + rsp[i].date.substring(0,10) + "</p><p>供应商：" + rsp[i].supplierName + "</p></a></li>";
+                        });
+                    }
+                    $("#mList").html(html).listview('refresh');
+                });
+                $("#searchPopup").popup("close");
+            });
+        });
+        
+        //初始化新增页面
+        $(document).on("pagecreate", "#pageAdd", function () {
+            //初始化供应商下拉框
+            $.get("/api/Supplier/GetSupplierList", function (rsp) {
+                var html = "";
+                if (rsp != null && rsp != undefined) {
+                    $.each(rsp, function (i) {
+                        html += "<option value='" + rsp[i].supplier_id + "'>" + rsp[i].supplier_name + "</option>";
+                    });
+                }
+                $("#supplier").html(html).selectmenu("refresh");
+            });
+
+            //绑定提交按钮
+            $("#addButton").on("tap", function () {
+                var name = $("#fullname").val();
+                if (name == "") {
+                    $("#myPopup_add").html("<p>名称不能为空！</p>");
+                    $("#popup_add").click();
+                    setTimeout('$("#myPopup_add").popup("close")', 1000);
+                    return false;
+                }
+                var date = $("#date").val();
+                var num = $("#num").val();
+                var price = $("#price").val();
+                var money = $("#money").val();
+                var supplierId = $("#supplier").val();
+                $.post("/api/Purchase/AddPurchase", { name: name, date: date, num: num, price: price, money: money, supplierId: supplierId }, function (rsp) {
+                    if (rsp == "成功") {
+                        $("#myPopup_add").html("<p>添加成功！</p>");
+                        $("#popup_add").click();
+                        setTimeout('location.href = "../Supplier/Purchase.html"', 1200);
+                    } else {
+                        $("#myPopup_add").html("<p>添加失败,请重试！</p>");
+                        $("#popup_add").click();
+                    }
+                });
+            });
+
+            $('#num').blur(function () {
+                var num = $("#num").val();
+                var money = $("#money").val();
+                if (num != "" && money != "")
+                    $("#price").val((money / num).toFixed(2));
+            });
+            $('#money').blur(function () {
+                var num = $("#num").val();
+                var money = $("#money").val();
+                if (num != "" && money != "")
+                    $("#price").val((money / num).toFixed(2));
+            });
+        });
+    </script>
+</head>
+<body>    
+    <!--进货信息列表页面-->
+    <div data-role="page" id="pageList">
+        <div data-role="header" data-position="fixed">
+            <a href="/home.html" class="ui-btn-left" data-ajax="false" data-icon="arrow-l">首页</a>
+            <h1>进货信息列表</h1>
+            <div data-role="navbar">
+                <ul>
+                    <li><a href="#pageAdd" data-icon="plus">添加</a></li>
+                    <li><a href="#searchPopup" data-rel="popup" data-position-to="window" data-transition="slidedown" data-icon="search">搜索</a></li>
+                </ul>
+            </div>  
+        </div>
+        <div data-role="main" class="ui-content">
+            <ul data-role="listview" id="mList"></ul>
+            <!--搜索对话框-->
+            <div data-role="popup" id="searchPopup">
+                <div data-role="main" class="ui-content">
+                    <input type="search" name="searchName" id="searchName" placeholder="搜索货品名称/供应商...">
+                    <input type='date' name='startDate' id='startDate' value='' >To
+                    <input type='date' name='endDate' id='endDate' value=''>
+                    <input type="button" id="searchButton" value="搜索">
+                </div>
+            </div>          
+        </div>
+        <div data-role="footer" style="text-align: center" data-position="fixed">
+            <p>CopyRight &copy;MeetMissCubilose</p>
+        </div>
+    </div>
+
+    <!--进货信息页面-->
+    <div data-role="page" id="pagePurchase">
+        <div data-role="header" data-position="fixed" data-add-back-btn="true">
+            <h1>进货信息</h1>
+        </div>
+        <div data-role="main" class="ui-content">
+            <ul data-role="listview">
+                <li style="background-color:#F6F6F6"><div><span style="font-weight:bolder">进货日期</span><div style="float:right;width:75%"><span style="float:right;white-space:pre-wrap;font-weight:lighter;" id="tdate"></span></div></div></li>
+                <li style="background-color:#F6F6F6"><div><span style="font-weight:bolder">货品名称</span><div style="float:right;width:75%"><span style="float:right;white-space:pre-wrap;font-weight:lighter;" id="tname"></span></div></div></li>
+                <li style="background-color:#F6F6F6"><div><span style="font-weight:bolder">货品数目</span><div style="float:right;width:75%"><span style="float:right;white-space:pre-wrap;font-weight:lighter;" id="tnum"></span></div></div></li>
+                <li style="background-color:#F6F6F6"><div><span style="font-weight:bolder">货品单价</span><div style="float:right;width:75%"><span style="float:right;white-space:pre-wrap;font-weight:lighter;" id="tprice"></span></div></div></li>
+                <li style="background-color:#F6F6F6"><div><span style="font-weight:bolder">货品总价</span><div style="float:right;width:75%"><span style="float:right;white-space:pre-wrap;font-weight:lighter;" id="tmoney"></span></div></div></li>
+                <li style="background-color:#F6F6F6"><div><span style="font-weight:bolder">供应商</span><div style="float:right;width:75%"><span style="float:right;white-space:pre-wrap;font-weight:lighter;" id="tsupplier"></span></div></div></li>
+            </ul>
+        </div>
+        <div data-role="footer" style="text-align: center" data-position="fixed">
+            <p>CopyRight &copy;MeetMissCubilose</p>
+        </div>
+    </div>
+
+    <!--新增进货信息页面-->
+    <div data-role="page" id="pageAdd">
+        <div data-role="header" data-position="fixed" data-add-back-btn="true">
+            <h1>新增供应商</h1>
+        </div>
+        <div data-role="main" class="ui-content">
+            <label for="supplier">供应商：</label>
+            <select name="supplier" id="supplier" data-native-menu="false"></select>
+            <label for="fullname">货品名称：</label>
+            <input type="text" name="fullname" id="fullname">
+            <label for="date">进货时间：</label>
+            <input type="date" name="date" id="date">
+            <label for="num">进货数目：</label>
+            <input type="text" name="num" id="num">
+            <label for="money">总价：</label>
+            <input type="number" name="money" id="money">
+            <label for="price">货品单价：</label>
+            <input type="number" name="price" id="price">
+            <input type="button" id="addButton" value="提交">            
+            <!--提示框-->
+            <a href="#myPopup_add" data-rel="popup" id="popup_add" style="display:none" data-position-to="window"></a>
+            <div data-role="popup" id="myPopup_add"></div>            
+        </div>
+        <div data-role="footer" style="text-align: center" data-position="fixed">
+            <p>CopyRight &copy;MeetMissCubilose</p>
+        </div>
+    </div>    
+</body>

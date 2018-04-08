@@ -1,0 +1,155 @@
+﻿<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="https://apps.bdimg.com/libs/jquerymobile/1.4.5/jquery.mobile-1.4.5.min.css">
+    <link rel="stylesheet" href="themes/skyd.min.css" />
+    <link rel="stylesheet" href="themes/jquery.mobile.icons.min.css" />
+    <link rel="stylesheet" href="https://code.jquery.com/mobile/1.4.3/jquery.mobile.structure-1.4.3.min.css" />
+    <script src="https://apps.bdimg.com/libs/jquery/1.10.2/jquery.min.js"></script>
+    <script src="https://apps.bdimg.com/libs/jquerymobile/1.4.5/jquery.mobile-1.4.5.min.js"></script>
+    <title>首页</title>
+
+    <script>
+        $(document).on("pagecreate", "#pagePersonalData", function () {
+            var managerId = localStorage.getItem("ManagerID");
+            $.get("/api/Manager/GetManager", { id: managerId }, function (rsp) {
+                if (rsp != null && rsp != undefined) {
+                    $("#ID").text(rsp.id);
+                    $("#name").text(rsp.name);
+                    $("#headImg").attr('src', rsp.img).attr("height", "60px");
+                    //编辑对话框默认值
+                    $("#nameEdit").val(rsp.name);
+                }
+            });
+
+
+            $(".ui-grid-c a").on("tap", function () {
+                var img = $(this).find("img").attr("src");
+                $.post("/api/Manager/UpdateManagerImg", { id: managerId, img: img }, function (rsp) {
+                    if (rsp == "成功") {
+                        $("#headImg").attr('src', img).attr("height", "60px");
+                        $("#popupHeadImg").popup("close");
+                    }
+                });
+            });
+
+            $("#nameButton").on("tap", function () {
+                var newName = $("#nameEdit").val();
+                if (newName == "")
+                    return false;
+                $.post("/api/Manager/UpdateManagerName", { id: managerId, name: newName }, function (rsp) {
+                    if (rsp == "成功") {
+                        $("#name").text(newName);
+                        $("#popupName").popup("close");
+                    }
+                });
+            });
+
+        });
+    </script>
+</head>
+<body>
+    <!--首页-->
+    <div data-role="page" id="Home">
+        <div data-role="header" data-position="fixed">
+            <h1 role="heading">首页</h1>
+            <div data-role="navbar">
+                <ul>
+                    <li><a href="#menuList" data-icon="gear">管理</a></li>
+                    <li><a href="#pagePersonalData" data-icon="user">个人中心</a></li>
+                    <li><a href="#myPopupDialog" data-rel="popup" data-position-to="window" data-transition="fade" data-icon="power">退出登陆</a></li>
+                </ul>
+            </div>
+        </div>        
+        <div data-role="main" class="ui-content">
+            <ul data-role="listview">
+                <li><a href="/WorkBench/Customer/CustomerCubilose.html" data-ajax="false"><img src="/img/tools/customer.png" class="ui-li-icon">客户</a></li>
+                <li><a href="/WorkBench/Trade/Orders.html" data-ajax="false"><img src="/img/tools/order.png" class="ui-li-icon">订单</a></li>
+                <li><a href="/WorkBench/Supplier/Purchase.html" data-ajax="false"><img src="/img/tools/purchase.png" class="ui-li-icon">进货</a></li>
+                <li><a href="/WorkBench/AccountManage/Account.html" data-ajax="false"><img src="/img/tools/account.png" class="ui-li-icon">财务</a></li>
+            </ul>
+        </div>
+        <!--退出登陆对话框-->
+        <div data-role="popup" id="myPopupDialog">
+            <div data-role="main" class="ui-content">
+                <h2>退出确认</h2>
+                <a href="/login.html" data-ajax="false" class="ui-btn ui-btn-inline">确定</a>
+                <a href="#" class="ui-btn ui-btn-inline" data-rel="back">取消</a>
+            </div>
+        </div>
+        <div data-role="footer" style="text-align: center" data-position="fixed">
+            <p>CopyRight &copy;MeetMissCubilose</p>
+        </div>
+    </div>    
+    <!--菜单页面-->
+    <div data-role="page" id="menuList">
+        <div data-role="header" data-position="fixed">
+            <a href="/home.html" class="ui-btn-left" data-icon="arrow-l">首页</a>
+            <h1 role="heading">管理菜单</h1>
+        </div>
+        <div data-role="main" class="ui-content">
+            <ul data-role="listview">
+                <li><a href="/WorkBench/Customer/CustomerManagement.html" data-ajax="false"><img src="/img/tools/customer.png" class="ui-li-icon">客户管理</a></li>
+                <li><a href="/WorkBench/Product/ProductManagement.html" data-ajax="false"><img src="/img/tools/product.png" class="ui-li-icon">产品管理</a></li>
+                <li><a href="/WorkBench/Product/CubiloseManagement.html" data-ajax="false"><img src="/img/tools/cubilose.png" class="ui-li-icon">燕窝管理</a></li>
+                <li><a href="/WorkBench/Manager/Manager.html" data-ajax="false"><img src="/img/tools/manager.png" class="ui-li-icon">管理员设置</a></li>
+                <li><a href="/WorkBench/Customer/CustomerSource.html" data-ajax="false"><img src="/img/tools/source.png" class="ui-li-icon">客户来源管理</a></li>
+                <li><a href="/WorkBench/Trade/Payment.html" data-ajax="false"><img src="/img/tools/payment.png" class="ui-li-icon">支付方式管理</a></li>
+                <li><a href="/WorkBench/Supplier/Supplier.html" data-ajax="false"><img src="/img/tools/supplier.png" class="ui-li-icon">供应商管理</a></li>
+                <li><a href="/WorkBench/Product/Product.html" data-ajax="false"><img src="/img/tools/mall.png" class="ui-li-icon">进入商城</a></li>
+            </ul>
+        </div>
+        <div data-role="footer" style="text-align: center" data-position="fixed">
+            <p>CopyRight &copy;MeetMissCubilose</p>
+        </div>
+    </div>
+    <!--个人中心页面-->
+    <div data-role="page" id="pagePersonalData">
+        <div data-role="header" data-position="fixed">
+            <a href="/home.html" class="ui-btn-left" data-icon="arrow-l">首页</a>
+            <h1>个人中心</h1>
+        </div>
+        <div data-role="main" class="ui-content">
+            <ul data-role="listview">
+                <li data-icon="false"><a href="javascript:volid(0)">ID<div style="float:right;width:75%"><span style="float:right" id="ID"></span></div></a></li>
+                <li data-icon="false"><a href="#popupHeadImg" data-rel="popup" data-position-to="window">头像<div style="float:right;width:75%"><img src="" style="float:right" id="headImg"></div></a></li>
+                <li data-icon="false"><a href="#popupName" data-rel="popup" data-position-to="window">名称<div style="float:right;width:75%"><span style="float:right" id="name"></span></div></a></li> 
+            </ul>            
+            <!--头像编辑对话框-->
+            <div data-role="popup" id="popupHeadImg" data-overlay-theme="b" style="width:240px;">
+                <div data-role="main" class="ui-content">
+                    <div class="ui-grid-c">
+                        <div class="ui-block-a"><a href="#"><img src="../../img/default/default-a.png"></a></div>
+                        <div class="ui-block-b"><a href="#"><img src="../../img/default/default-b.png"></a></div>
+                        <div class="ui-block-c"><a href="#"><img src="../../img/default/default-c.png"></a></div>
+                        <div class="ui-block-d"><a href="#"><img src="../../img/default/default-d.png"></a></div>
+
+                        <div class="ui-block-a"><a href="#"><img src="../../img/default/default-e.png"></a></div>
+                        <div class="ui-block-b"><a href="#"><img src="../../img/default/default-f.png"></a></div>
+                        <div class="ui-block-c"><a href="#"><img src="../../img/default/default-g.png"></a></div>
+                        <div class="ui-block-d"><a href="#"><img src="../../img/default/default-h.png"></a></div>
+
+                        <div class="ui-block-a"><a href="#"><img src="../../img/default/default-i.png"></a></div>
+                        <div class="ui-block-b"><a href="#"><img src="../../img/default/default-j.png"></a></div>
+                        <div class="ui-block-c"><a href="#"><img src="../../img/default/default-k.png"></a></div>
+                        <div class="ui-block-d"><a href="#"><img src="../../img/default/default-l.png"></a></div>
+
+                        <div class="ui-block-a"><a href="#"><img src="../../img/default/default-m.png"></a></div>
+                        <div class="ui-block-b"><a href="#"><img src="../../img/default/default-n.png"></a></div>
+                        <div class="ui-block-c"><a href="#"><img src="../../img/default/default-o.png"></a></div>
+                        <div class="ui-block-d"><a href="#"><img src="../../img/default/default-p.png"></a></div>
+                    </div>
+                </div>
+            </div>
+            <!--姓名编辑对话框-->
+            <div data-role="popup" id="popupName" data-overlay-theme="b" style="width:250px;">
+                <div data-role="main" class="ui-content">
+                    <input type="text" name="nameEdit" id="nameEdit" data-clear-btn="true">
+                    <input type="button" id="nameButton" value="保存">
+                </div>
+            </div>
+        </div>
+        <div data-role="footer" style="text-align: center" data-position="fixed">
+            <p>CopyRight &copy;MeetMissCubilose</p>
+        </div>
+    </div>
+</body>

@@ -1,0 +1,310 @@
+﻿<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="https://apps.bdimg.com/libs/jquerymobile/1.4.5/jquery.mobile-1.4.5.min.css">
+    <link rel="stylesheet" href="../../themes/skyd.min.css" />
+    <link rel="stylesheet" href="../../themes/jquery.mobile.icons.min.css" />
+    <link rel="stylesheet" href="https://code.jquery.com/mobile/1.4.3/jquery.mobile.structure-1.4.3.min.css" />
+    <script src="https://apps.bdimg.com/libs/jquery/1.10.2/jquery.min.js"></script>
+    <script src="https://apps.bdimg.com/libs/jquerymobile/1.4.5/jquery.mobile-1.4.5.min.js"></script>
+    <title>产品详细信息</title>
+
+    <script>        
+        $(document).on("pagecreate", "#pageProduct", function () {
+            var customerId = localStorage.getItem("CustomerID");
+            var productId = localStorage.getItem("ProductDetails_ID");
+
+            $.get("/api/Product/GetProduct", { id: productId }, function (rsp) {
+                if (rsp != null && rsp != undefined) {
+                    $("#tname").text(rsp.name);
+                    $("#tcomponent").html(rsp.component);
+                    $("#ttype").text(rsp.typeDescript);
+                    $("#tinfo").text(rsp.info);
+                    $("#tprice").text(rsp.price);
+                    $("#tmode").text(rsp.mode);
+                    $("#timg").attr("src", rsp.img).attr("width", "100%");
+                }
+            });
+            //绑定点击成分(燕窝)事件
+            $("#tcomponent").on("tap", "span", function () {
+                var cubiloseId = $(this).attr("data-id");
+                $.get("/api/Cubilose/GetCubilose", { id: cubiloseId }, function (rsp) {
+                    if (rsp != null && rsp != undefined) {
+                        $("#pname").text(rsp.name);
+                        $("#pimg").attr("src", (rsp.img)).attr("width", "100%");
+                        if (rsp.type == 2) {
+                            $("#ptype").text(rsp.typeDescript + "-" + rsp.origin);
+                        }
+                        else {
+                            $("#ptype").text(rsp.typeDescript);
+                        }
+                        $("#pinfo").text(rsp.info);
+                        $("#peffect").text(rsp.effect);
+                        $("#pmemo").text(rsp.memo);
+                    }
+                });
+                $("#cubilosepopup").click();
+            });
+
+            $("#collection").on("tap", function () {
+                $.post("/api/Customer/AddCustomerProduct", { productId: productId, customerId: customerId, type: 2 }, function (rsp) {
+                    if (rsp == "成功") {
+                        $("#myPopup").html("<p>收藏成功！</p>");
+                        $("#popup").click();
+                    } else {
+                        $("#myPopup").html("<p>收藏失败,请重试！</p>");
+                        $("#popup").click();
+                    }
+                    $("#collection").removeClass("ui-btn-active");
+                    setTimeout('$("#myPopup").popup("close")', 1000);
+                });
+            });
+
+            $("#shoppingCar").on("tap", function () {
+                $.post("/api/Customer/AddCustomerProduct", { productId: productId, customerId: customerId, type: 0 }, function (rsp) {
+                    if (rsp == "成功") {
+                        $("#myPopup").html("<p>加入购物车成功！</p>");
+                        $("#popup").click();
+                    } else {
+                        $("#myPopup").html("<p>加入购物车失败,请重试！</p>");
+                        $("#popup").click();
+                    }
+                    $("#shoppingCar").removeClass("ui-btn-active");
+                    setTimeout('$("#myPopup").popup("close")', 1000);
+                });
+            });
+        });
+
+        $(document).on("pagecreate", "#tradePage", function () {
+            var customerId = localStorage.getItem("CustomerID");
+            var productId = localStorage.getItem("ProductDetails_ID");
+
+            //加载收货地址信息
+            $.get("/api/Customer/GetCustomerAddressList", { customerId: customerId }, function (rsp) {
+                var addrhtml = "";
+                var addresshtml = "";
+                if (rsp != null && rsp != undefined && rsp.length > 0) {
+                    $.each(rsp, function (i) {
+                        addresshtml += "<li data-icon='location'><a href='' data-id='" + rsp[i].addr_id + "'><h2>" + rsp[i].person + "</h2><p>联系电话：" + rsp[i].phone + "</p><p>收货地址：" + rsp[i].address + "</p></a></li>";
+                    });
+                    addresshtml += "<li data-icon='plus'><a href='#' flag='1'>添加新地址</a></li>"
+                    addrhtml += "<li data-icon='location'><a href='#popupAddr' data-rel='popup' data-position-to='window'><h2>" + rsp[0].person + "</h2><p>联系电话：" + rsp[0].phone + "</p><p>收货地址：" + rsp[0].address + "</p></a></li>";
+                }
+                else {
+                    addrhtml += "<li data-icon='location'><a href='#popupAddr' data-rel='popup' data-position-to='window'>点击添加收货地址</a></li>";
+                }
+                $("#addrListview").html(addrhtml).listview('refresh');//默认显示第一条
+                $("#addressList").html(addresshtml).listview('refresh');//加载所有地址
+                if (addresshtml != "") {
+                    $("#addDIV").hide();
+                    $("#addressList").show();
+                }
+            });
+
+            //加载货物信息
+            $("#p_img").attr("src", $("#timg").attr("src"));
+            $("#p_name").text($("#tname").text());
+            $("#p_price").text("￥" + $("#tprice").text());
+            var totalPrice = $("#tprice").text();//总价
+            //加载客户优惠信息
+            $.get("/api/Customer/GetCustomer", { id: customerId }, function (rsp) {
+                if (rsp != null && rsp != undefined) {
+                    if (rsp.level > 0) {
+                        $("#cu_level p").text("VIP" + rsp.level + "：" + (10 - rsp.level) + "折优惠");
+                        $("#cu_level").show();
+                        totalPrice = totalPrice * (10 - rsp.level) * 0.1;
+                    }else{
+                        $("#cu_level").hide();
+                        totalPrice = totalPrice * 1;//转换为数字格式
+                    }
+                }
+                $("#totalPrice").text(totalPrice.toFixed(2));
+            });
+
+            //加载支付方式信息
+            $.get("/api/Payment/GetPaymentList", function (rsp) {
+                var payhtml = "";
+                if (rsp != null && rsp != undefined) {
+                    $.each(rsp, function (i) {
+                        payhtml += "<option value='" + rsp[i].payment_id + "'>" + rsp[i].payment_name + "</option>";
+                    });
+                }
+                $("#payment").html(payhtml).selectmenu('refresh');
+            });
+
+            //绑定点击地址事件
+            $("#addrListview").on("tap", function () {
+                if ($(this).find("p").text() != "") {
+                    $("#addDIV").hide();
+                    $("#addressList").show();
+                } else {
+                    $("#addDIV").show();
+                    $("#addressList").hide();
+                }        
+            });
+
+            $("#p_num").on("click", function () {
+                $("#popup_num").click();
+            });
+
+            $("#numButton").on("tap", function () {
+                var number = $("#numEdit").val();
+                $("#p_num").text(number);
+                $("#popupNum").popup("close");
+                $("#totalPrice").text((totalPrice * number).toFixed(2));
+            });
+
+            //绑定地址对话框点击选择按钮
+            $("#addressList").on("tap", "a", function () {
+                if ($(this).attr("flag") == '1') {
+                    $("#addDIV").show();
+                    $("#addressList").hide();
+                    return false;
+                }
+                else {
+                    for (i = 0; i < 3; i++) {
+                        $("#addrListview").find("a").children().eq(i).text($(this).children().eq(i).text());
+                    }
+                    $("#popupAddr").popup("close");
+                }
+            });
+
+            //绑定提交按钮
+            $("#SubmitBtn").on("tap", function () {
+                var totalPrice = $("#totalPrice").text();
+                var payType = $("#payment").val();
+                var num = $("#p_num").text();
+                var discountWay = $("#cu_level p").text();
+                var discountMoney = $("#tprice").text() * num - $("#totalPrice").text();
+                var receivingInfo = "";
+                for (i = 0; i < 3; i++) {
+                    receivingInfo += $("#addrListview").find("a").children().eq(i).text() + "|";
+                }
+                receivingInfo = receivingInfo.substring(0, receivingInfo.length - 1);
+                $.post("/api/Trade/AddTradeInfo", { totalPrice: totalPrice, customerId: customerId, productId: productId, num: num, discountWay: discountWay, discountMoney: discountMoney, payType: payType, receivingInfo: receivingInfo }, function (rsp) {
+                    if (rsp == "成功") {
+                        $("#myPopup_trade").html("<p>购买成功！</p>");
+                        $("#popup_trade").click();
+                        setTimeout('location.href = "../Product/ProductDetails.html"', 1200);//正式环境前往支付页面
+                    } else {
+                        $("#myPopup_trade").html("<p>购买失败！</p>");
+                        $("#popup_trade").click();
+                    }
+                });
+
+            });
+
+            //绑定地址保存按钮
+            $("#newAddrBtn").on("tap", function () {
+                var person = $("#person").val();
+                var phone = $("#phone").val();
+                var address = $("#address").val();
+                $.post("/api/Customer/AddCustomerAddress", { customerId: customerId, person: person, phone: phone, address: address, serial: 0 }, function (rsp) {
+                    if (rsp == "成功") {
+                        $("#addrListview").html("<li data-icon='location'><a href='#popupAddr' data-rel='popup' data-position-to='window'><h2>" + person + "</h2><p>联系电话：" + phone + "</p><p>收货地址：" + address + "</p></a></li>").listview('refresh');
+                        //$("#addrListview").find("a").children().eq(0).text(person);
+                        //$("#addrListview").find("a").children().eq(1).text("联系电话：" + phone);
+                        //$("#addrListview").find("a").children().eq(2).text("收货地址：" + address);
+                        $("#popupAddr").popup("close");
+                    } else {
+                        
+                    }
+                });
+                
+            });
+
+        });
+
+    </script>
+</head>
+<body>
+    <!--产品详情页面-->
+    <div data-role="page" id="pageProduct">
+        <div data-role="header" data-position="fixed">
+            <h1>享燕遇</h1>
+        </div>
+        <div data-role="main" class="ui-content">
+            <img id="timg" src=""></br></br>
+            <ul data-role="listview">
+                <li style="background-color:#F6F6F6"><div><span style="font-weight:bolder">名称</span><div style="float:right;width:75%"><span style="float:right;white-space:pre-wrap;font-weight:lighter;" id="tname"></span></div></div></li>
+                <li style="background-color:#F6F6F6"><div><span style="font-weight:bolder">类别</span><div style="float:right;width:75%"><span style="float:right;white-space:pre-wrap;font-weight:lighter;" id="ttype"></span></div></div></li>
+                <li style="background-color:#F6F6F6"><div><span style="font-weight:bolder">型号</span><div style="float:right;width:75%"><span style="float:right;white-space:pre-wrap;font-weight:lighter;" id="tmode"></span></div></div></li>
+                <li style="background-color:#F6F6F6"><div><span style="font-weight:bolder">成分</span><div style="float:right;width:75%"><span style="float:right;white-space:pre-wrap;font-weight:lighter;" id="tcomponent"></span></div></div></li>
+                <li style="background-color:#F6F6F6"><div><span style="font-weight:bolder">价格</span><div style="float:right;width:75%"><span style="float:right;white-space:pre-wrap;font-weight:lighter;" id="tprice"></span></div></div></li>
+                <li style="background-color:#F6F6F6"><div><span style="font-weight:bolder">信息</span><div style="float:right;width:75%"><span style="float:right;white-space:pre-wrap;font-weight:lighter;" id="tinfo"></span></div></div></li>
+            </ul>
+            <!--燕窝展示框-->
+            <a href="#CubilosePopup" data-rel="popup" id="cubilosepopup" style="display:none" data-position-to="window"></a>
+            <div data-role="popup" id="CubilosePopup" style="width:250px;" class="ui-btn ui-btn-inline ui-corner-all">
+                <img id="pimg" src="">
+                <ul data-role="listview">
+                    <li style="background-color:#F6F6F6"><div>名称<div style="float:right;width:75%"><span style="float:right;white-space:pre-wrap;font-weight:lighter;" id="pname"></span></div></div></li>
+                    <li style="background-color:#F6F6F6"><div>类别<div style="float:right;width:75%"><span style="float:right;white-space:pre-wrap;font-weight:lighter;" id="ptype"></span></div></div></li>
+                    <li style="background-color:#F6F6F6"><div>详情<div style="float:right;width:75%"><span style="float:right;white-space:pre-wrap;font-weight:lighter;" id="pinfo"></span></div></div></li>
+                    <li style="background-color:#F6F6F6"><div>功效<div style="float:right;width:75%"><span style="float:right;white-space:pre-wrap;font-weight:lighter;" id="peffect"></span></div></div></li>
+                    <li style="background-color:#F6F6F6"><div>备注<div style="float:right;width:75%"><span style="float:right;white-space:pre-wrap;font-weight:lighter;" id="pmemo"></span></div></div></li>
+                </ul>                
+            </div>
+        </div>
+        <!--提示框-->
+        <a href="#myPopup" data-rel="popup" id="popup" style="display:none" data-position-to="window"></a>
+        <div data-role="popup" id="myPopup"></div>
+        <div data-role="footer" style="text-align: center" data-position="fixed">
+            <div data-role="navbar">
+                <ul>
+                    <li><a href="/WorkBench/Product/Product.html" data-icon="home" data-ajax="false">首页</a></li>
+                    <li><a href="javascript:volid(0)" data-icon="tag" id="collection">收藏</a></li>
+                    <li><a href="#" data-icon="phone">联系卖家</a></li>
+                    <li><a data-icon="shop" id="shoppingCar">加入购物车</a></li>
+                    <li><a href="#tradePage" data-icon="arrow-d" data-ajax="false">下单</a></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!--订单页面-->
+    <div data-role="page" id="tradePage">
+        <div data-role="header" data-position="fixed" data-add-back-btn="true">
+            <h1>确认订单</h1>
+        </div>
+        <div data-role="main" class="ui-content">
+            <ul data-role="listview" data-inset="true" id="addrListview">
+            </ul>
+            <ul data-role="listview" data-inset="true" id="productListview">
+                <li data-icon='false'>
+                    <a href='#'><img src='' id="p_img"><h2 id="p_name"></h2><p id="p_price"></p><span class='ui-li-count' id="p_num">1</span></a>
+                </li>
+                <li data-icon='false' id="cu_level" style="display:none">
+                    <a href='#'><p style='float:right'></p></a>
+                </li>
+            </ul>
+            <select name="payment" id="payment" data-native-menu="false"></select>
+            <p style="float:right">合计：<span id="totalPrice" style="font-size:28px;"></span></p>
+            <!--数量对话框-->
+            <a href="#popupNum" data-rel="popup" id="popup_num" style="display:none" data-position-to="window"></a>
+            <div data-role="popup" id="popupNum" data-overlay-theme="b">
+                <div data-role="main" class="ui-content">
+                    <input type="number" name="numEdit" id="numEdit" value="1">
+                    <input type="button" id="numButton" value="确定">
+                </div>
+            </div> 
+            <!--地址选择弹窗-->
+            <div data-role="popup" id="popupAddr" data-overlay-theme="b" class="ui-btn ui-btn-inline ui-corner-all" style="width:250px;">
+                <div data-role="main" class="ui-content" id="main1">
+                    <ul data-role="listview" id="addressList"></ul>
+                    <div id="addDIV">
+                        <input type="text" name="person" id="person" placeholder="姓名">
+                        <input type="tel" name="phone" id="phone" placeholder="电话">
+                        <textarea id="address" placeholder="地址"></textarea>
+                        <input type="button" id="newAddrBtn" value="保存">
+                    </div>
+                </div>
+            </div>
+            <!--提示框-->
+            <a href="#myPopup_trade" data-rel="popup" id="popup_trade" style="display:none" data-position-to="window"></a>
+            <div data-role="popup" id="myPopup_trade"></div>   
+        </div>
+        <div data-role="footer" style="text-align: center;background-color:#ff7500" data-position="fixed">
+            <p style="color:white" id="SubmitBtn">提交订单</p>
+        </div>
+    </div>
+</body>

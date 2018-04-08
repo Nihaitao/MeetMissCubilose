@@ -1,0 +1,153 @@
+﻿<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="https://apps.bdimg.com/libs/jquerymobile/1.4.5/jquery.mobile-1.4.5.min.css">
+    <link rel="stylesheet" href="../../themes/skyd.min.css" />
+    <link rel="stylesheet" href="../../themes/jquery.mobile.icons.min.css" />
+    <link rel="stylesheet" href="https://code.jquery.com/mobile/1.4.3/jquery.mobile.structure-1.4.3.min.css" />
+    <script src="https://apps.bdimg.com/libs/jquery/1.10.2/jquery.min.js"></script>
+    <script src="https://apps.bdimg.com/libs/jquerymobile/1.4.5/jquery.mobile-1.4.5.min.js"></script>
+    <title>管理员信息</title>
+    <stytle>
+        
+    </stytle>
+    <script>
+        $(document).on("pagecreate", "#pageList", function () {
+            if (localStorage.getItem("ManagerID") == undefined || localStorage.getItem("ManagerID") == null) {
+                location.href = "/login.html";
+            }
+            $.get("/api/Manager/GetManagerList", function (rsp) {
+                var html = "";
+                if (rsp != null || rsp != undefined) {
+                    $.each(rsp, function (i) {
+                        html += "<li><a href='#pageManager' data-id='" + rsp[i].id + "' ><img src='" + rsp[i].img + "' class='ui-li-icon'>" + rsp[i].name + "</a></li>";
+                    });
+                }
+                $("#mList").html(html).listview('refresh');
+            });
+
+            $("#mList").on("tap", "a", function () {
+                var id = $(this).attr("data-id");
+                $.get("/api/Manager/GetManager", { id: id }, function (rsp) {
+                    if (rsp != null || rsp != undefined) {
+                        $("#tid").text(rsp.id);
+                        $("#tname").text(rsp.name);
+                        $("#theadImg").html("<img src='" + rsp.img + "'>");
+                        $("#ttime").text(rsp.time);
+                    }
+                });
+            });
+
+            //绑定搜索按钮
+            $("#searchButton").on("tap", function () {
+                var name = $("#search").val();
+                $.get("/api/Manager/GetSearchManagerList", { name: name }, function (rsp) {
+                    var html = "";
+                    if (rsp != null || rsp != undefined) {
+                        $.each(rsp, function (i) {
+                            html += "<li><a href='#pageManager' data-id='" + rsp[i].id + "' ><img src='" + rsp[i].img + "' class='ui-li-icon'>" + rsp[i].name + "</a></li>";
+                        });
+                    }
+                    $("#mList").html(html).listview('refresh');
+                });
+                $("#searchPopup").popup("close");
+            });
+        });
+
+        $(document).on("pagecreate", "#pageAdd", function () {
+            $.get("/api/Login/GetLoginList", function (rsp) {
+                var html = "";
+                if (rsp != null || rsp != undefined) {
+                    $.each(rsp, function (i) {
+                        html += "<option value='" + rsp[i].id + "'>" + rsp[i].name + "</option>";
+                    });
+                }
+                $("#loginId").html(html).selectmenu("refresh");
+            });
+
+            $("#addButton").on("tap", function () {
+                var name = $("#fullname").val();
+                var loginId = $("#loginId option:selected").val();
+                if (name == "" || loginId == "" || loginId == 0)
+                    return false;
+                $.post("/api/Manager/AddManager", { name: name, loginId: loginId }, function (rsp) {
+                    if (rsp == "成功") {
+                        $("#myPopup_add").html("<p>添加成功！</p>");
+                        $("#popup_add").click();
+                        setTimeout('location.href = "Manager.html"', 1200);
+                    } else {
+                        $("#myPopup_add").html("<p>添加失败,请重试！</p>");
+                        $("#popup_add").click();
+                    }
+                });
+            });
+        });
+        
+    </script>
+</head>
+<body>
+    <!--管理员列表界面-->
+    <div data-role="page" id="pageList">
+        <div data-role="header" data-position="fixed">
+            <h1>管理员列表</h1>
+            <div data-role="navbar">
+                <ul>
+                    <li><a href="#pageAdd" data-icon="plus">添加</a></li>
+                    <li><a href="../../home.html#menuList" data-icon="home" data-ajax="false">管理中心</a></li>
+                    <li><a href="#searchPopup" data-rel="popup" data-position-to="window" data-transition="slidedown" data-icon="search">搜索</a></li>
+                </ul>
+            </div>
+        </div>
+        <div data-role="main" class="ui-content">
+            <ul data-role="listview" id="mList"></ul>        
+            <!--搜索对话框-->
+            <div data-role="popup" id="searchPopup">
+                <div data-role="main" class="ui-content">
+                    <input type="search" name="search" id="search" placeholder="搜索内容...">
+                    <input type="button" id="searchButton" value="搜索">
+                </div>
+            </div>     
+        </div>
+
+        <div data-role="footer" style="text-align: center" data-position="fixed">
+            <p>CopyRight &copy;MeetMissCubilose</p>
+        </div>
+    </div>
+
+    <!--管理员详细界面-->
+    <div data-role="page" id="pageManager">
+        <div data-role="header" data-add-back-btn="true">
+            <h1>管理员信息</h1>
+        </div>
+        <div data-role="main" class="ui-content">
+            <ul data-role="listview">
+                <li style="background-color:#F6F6F6"><div><span style="font-weight:bolder">ID</span><div style="float:right;width:75%"><span style="float:right;white-space:pre-wrap;font-weight:lighter;" id="tid"></span></div></div></li>
+                <li style="background-color:#F6F6F6"><div><span style="font-weight:bolder">头像</span><div style="float:right;width:75%"><span style="float:right;white-space:pre-wrap;font-weight:lighter;" id="theadImg"></span></div></div></li>
+                <li style="background-color:#F6F6F6"><div><span style="font-weight:bolder">名称</span><div style="float:right;width:75%"><span style="float:right;white-space:pre-wrap;font-weight:lighter;" id="tname"></span></div></div></li>
+                <li style="background-color:#F6F6F6"><div><span style="font-weight:bolder">注册时间</span><div style="float:right;width:75%"><span style="float:right;white-space:pre-wrap;font-weight:lighter;" id="ttime"></span></div></div></li>
+            </ul>           
+        </div>
+        <div data-role="footer" style="text-align: center" data-position="fixed">
+            <p>CopyRight &copy;MeetMissCubilose</p>
+        </div>
+    </div>
+
+    <!--新增管理员界面-->
+    <div data-role="page" id="pageAdd">
+        <div data-role="header" data-add-back-btn="true">
+            <h1>新增管理员</h1>
+        </div>
+        <div data-role="main" class="ui-content">
+            <label for="loginId">登陆账户</label>
+            <select name="loginId" id="loginId" data-native-menu="false"></select>
+            <label for="fullname">名称：</label>
+            <input type="text" name="fullname" id="fullname">
+            <input type="button" id="addButton" value="提交">
+        </div>        
+        <!--提示框-->
+        <a href="#myPopup_add" data-rel="popup" id="popup_add" style="display:none" data-position-to="window"></a>
+        <div data-role="popup" id="myPopup_add"></div> 
+        <div data-role="footer" style="text-align: center" data-position="fixed">
+            <p>CopyRight &copy;MeetMissCubilose</p>
+        </div>
+    </div>
+</body>

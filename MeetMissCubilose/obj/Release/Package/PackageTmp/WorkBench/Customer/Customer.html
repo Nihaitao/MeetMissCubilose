@@ -1,0 +1,951 @@
+﻿<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="https://apps.bdimg.com/libs/jquerymobile/1.4.5/jquery.mobile-1.4.5.min.css">
+    <link rel="stylesheet" href="../../themes/skyd.min.css" />
+    <link rel="stylesheet" href="../../themes/jquery.mobile.icons.min.css" />
+    <link rel="stylesheet" href="https://code.jquery.com/mobile/1.4.3/jquery.mobile.structure-1.4.3.min.css" />
+    <script src="https://apps.bdimg.com/libs/jquery/1.10.2/jquery.min.js"></script>
+    <script src="https://apps.bdimg.com/libs/jquerymobile/1.4.5/jquery.mobile-1.4.5.min.js"></script>
+    <title>客户信息</title>
+
+    <script>
+        $(document).on("pagecreate", "#Home", function () {
+            if (localStorage.getItem("ManagerID") != undefined && localStorage.getItem("ManagerID") != null && localStorage.getItem("ManagerID") != "") {
+                $("#manager").show();
+                $("#manager").next().remove();
+            }
+        });
+
+        $(document).on("pagecreate", "#pageShoppingCar", function () {
+            var customerId = localStorage.getItem("CustomerID");
+            $.get("/api/Product/GetCustomerProductList", { customerId: customerId, type: 0 }, function (rsp) {
+                var html = "";
+                if (rsp != null || rsp != undefined) {
+                    $.each(rsp, function (i) {
+                        if (rsp[i].state == 1) {
+                            html += "<li><span style='display:none;float:right;background-color:#FF0000;color:#ffffff;width:20%;height:81.38px;text-align:center;line-height:81.38px;'>删 除</span>";
+                            html += "<a href='../Product/ProductDetails.html' data-id='" + rsp[i].id + "' data-price='" + rsp[i].price + "' data-ajax='false'><img src='" + rsp[i].img + "'><h2>" + rsp[i].name + "</h2><p>" + rsp[i].info + "</p></a></li>";
+                        }
+                        else {
+                            html += "<li data-icon='false'><span style='display:none;float:right;background-color:#FF0000;color:#ffffff;width:20%;height:81.38px;text-align:center;line-height:81.38px;'>删 除</span>";
+                            html += "<span style='float:right;color:#FF0000;width:20%;height:81.38px;text-align:center;line-height:81.38px;'>已下架</span>";
+                            html += "<a href='#' data-id='" + rsp[i].id + "'><img src='" + rsp[i].img + "'><h2>" + rsp[i].name + "</h2><p>" + rsp[i].info + "</p></a></li>";
+                        }
+                    });
+                }
+                $("#shopList").html(html).listview('refresh');
+            });
+            //绑定点击事件
+            $("#shopList").on("tap", "a", function () {
+                var id = $(this).attr("data-id");
+                localStorage.setItem("ProductDetails_ID", id);
+            });
+            //绑定向左滑动列表事件
+            $("#shopList").on("swipeleft", "a", function () {
+                $(this).siblings("span").show();
+            });
+            //绑定向右滑动列表事件
+            $("#shopList").on("swiperight", "a", function () {
+                $(this).siblings("span").eq(0).hide();
+            });
+            //绑定点击删除事件
+            $("#shopList").on("tap", "span", function () {
+                if ($(this).text() == "已下架")
+                    return false;
+                var productId = $(this).siblings("a").attr("data-id");
+                var item = $(this).parent();
+                $.post("/api/Product/DeleteCustomerProducts", { productId: productId, customerId: customerId, type: 0 }, function (rsp) {
+                    if (rsp == "成功") {
+                        $("#shopCarPopup").html("<p>操作成功！</p>");
+                        $("#carpopup").click();
+                        item.remove();//删除页面元素
+                    } else {
+                        $("#shopCarPopup").html("<p>操作失败,请重试！</p>");
+                        $("#carpopup").click();
+                    }
+                });
+            });
+            //绑定搜索按钮
+            $("#searchButton").on("tap", function () {
+                var name = $("#search").val();
+                $.get("/api/Product/GetSearchCustomerProductList", { customerId: customerId, type: 0, name: name }, function (rsp) {
+                    var html = "";
+                    if (rsp != null || rsp != undefined) {
+                        $.each(rsp, function (i) {
+                            if (rsp[i].state == 1) {
+                                html += "<li><span style='display:none;float:right;background-color:#FF0000;color:#ffffff;width:20%;height:81.38px;text-align:center;line-height:81.38px;'>删 除</span>";
+                                html += "<a href='../Product/ProductDetails.html' data-id='" + rsp[i].id + "' data-price='" + rsp[i].price + "' data-ajax='false'><img src='" + rsp[i].img + "'><h2>" + rsp[i].name + "</h2><p>" + rsp[i].info + "</p></a></li>";
+                            }
+                            else {
+                                html += "<li data-icon='false'><span style='display:none;float:right;background-color:#FF0000;color:#ffffff;width:20%;height:81.38px;text-align:center;line-height:81.38px;'>删 除</span>";
+                                html += "<span style='float:right;color:#FF0000;width:20%;height:81.38px;text-align:center;line-height:81.38px;'>已下架</span>";
+                                html += "<a href='#' data-id='" + rsp[i].id + "'><img src='" + rsp[i].img + "'><h2>" + rsp[i].name + "</h2><p>" + rsp[i].info + "</p></a></li>";
+                            }
+                        });
+                    }
+                    $("#shopList").html(html).listview('refresh');
+                });
+                $("#searchPopup").popup("close");
+            });
+
+            //绑定清空按钮
+            $("#deleteShop").on("tap", function () {
+                $.post("/api/Product/DeleteCustomerProducts", { customerId: customerId, type: 0 }, function (rsp) {
+                    if (rsp == "成功") {
+                        $("#shopCarPopup").html("<p>操作成功！</p>");
+                        $("#carpopup").click();
+                        $("#shopList").html("").listview('refresh');
+                    } else {
+                        $("#shopCarPopup").html("<p>清空购物车失败,请重试！</p>");
+                        $("#carpopup").click();
+                    }
+                });
+                $("#deleteShopPopup").popup("close");
+            });
+        });
+
+        $(document).on("pagecreate", "#pageFavorites", function () {
+            var customerId = localStorage.getItem("CustomerID");
+            $.get("/api/Product/GetCustomerProductList", { customerId: customerId, type: 2 }, function (rsp) {
+                var html = "";
+                if (rsp != null || rsp != undefined) {
+                    $.each(rsp, function (i) {
+                        if (rsp[i].state == 1) {
+                            html += "<li><span style='display:none;float:right;background-color:#FF0000;color:#ffffff;width:20%;height:81.38px;text-align:center;line-height:81.38px;'>删 除</span>";
+                            html += "<a href='../Product/ProductDetails.html' data-id='" + rsp[i].id + "' data-ajax='false'><img src='" + rsp[i].img + "'><h2>" + rsp[i].name + "</h2><p>" + rsp[i].info + "</p></a></li>";
+                        }
+                        else {
+                            html += "<li data-icon='false'><span style='display:none;float:right;background-color:#FF0000;color:#ffffff;width:20%;height:81.38px;text-align:center;line-height:81.38px;'>删 除</span>";
+                            html += "<span style='float:right;color:#FF0000;width:20%;height:81.38px;text-align:center;line-height:81.38px;'>已下架</span>";
+                            html += "<a href='#' data-id='" + rsp[i].id + "'><img src='" + rsp[i].img + "'><h2>" + rsp[i].name + "</h2><p>" + rsp[i].info + "</p></a></li>";
+                        }
+                    });
+                }
+                $("#favoritesList").html(html).listview('refresh');
+            });
+            //绑定点击事件
+            $("#favoritesList").on("tap", "a", function () {
+                var id = $(this).attr("data-id");
+                localStorage.setItem("ProductDetails_ID", id);
+            });
+            //绑定向左滑动列表事件
+            $("#favoritesList").on("swipeleft", "a", function () {
+                $(this).siblings("span").show();
+            });
+            //绑定向右滑动列表事件
+            $("#favoritesList").on("swiperight", "a", function () {
+                $(this).siblings("span").eq(0).hide();
+            });
+            //绑定点击删除事件
+            $("#favoritesList").on("tap", "span", function () {
+                if ($(this).text() == "已下架")
+                    return false;
+                var productId = $(this).siblings("a").attr("data-id");
+                var item = $(this).parent();
+                $.post("/api/Product/DeleteCustomerProducts", { productId: productId, customerId: customerId, type: 2 }, function (rsp) {
+                    if (rsp == "成功") {
+                        $("#favoritesPopup").html("<p>操作成功！</p>");
+                        $("#fapopup").click();
+                        item.remove();//删除页面元素
+                    } else {
+                        $("#favoritesPopup").html("<p>操作失败,请重试！</p>");
+                        $("#fapopup").click();
+                    }
+                });
+            });
+            //绑定搜索按钮
+            $("#searchButton2").on("tap", function () {
+                var name = $("#search2").val();
+                $.get("/api/Product/GetSearchCustomerProductList", { customerId: customerId, type: 2, name: name }, function (rsp) {
+                    var html = "";
+                    if (rsp != null || rsp != undefined) {
+                        $.each(rsp, function (i) {
+                            if (rsp[i].state == 1) {
+                                html += "<li><span style='display:none;float:right;background-color:#FF0000;color:#ffffff;width:20%;height:81.38px;text-align:center;line-height:81.38px;'>删 除</span>";
+                                html += "<a href='../Product/ProductDetails.html' data-id='" + rsp[i].id + "' data-ajax='false'><img src='" + rsp[i].img + "'><h2>" + rsp[i].name + "</h2><p>" + rsp[i].info + "</p></a></li>";
+                            }
+                            else {
+                                html += "<li data-icon='false'><span style='display:none;float:right;background-color:#FF0000;color:#ffffff;width:20%;height:81.38px;text-align:center;line-height:81.38px;'>删 除</span>";
+                                html += "<span style='float:right;color:#FF0000;width:20%;height:81.38px;text-align:center;line-height:81.38px;'>已下架</span>";
+                                html += "<a href='#' data-id='" + rsp[i].id + "'><img src='" + rsp[i].img + "'><h2>" + rsp[i].name + "</h2><p>" + rsp[i].info + "</p></a></li>";
+                            }
+                        });
+                    }
+                    $("#favoritesList").html(html).listview('refresh');
+                });
+                $("#searchPopup2").popup("close");
+            });
+
+            //绑定清空按钮
+            $("#deleteFavorites").on("tap", function () {
+                $.post("/api/Product/DeleteCustomerProducts", { customerId: customerId, type: 2 }, function (rsp) {
+                    if (rsp == "成功") {
+                        $("#favoritesPopup").html("<p>操作成功！</p>");
+                        $("#fapopup").click();
+                        $("#favoritesList").html("").listview('refresh');
+                    } else {
+                        $("#favoritesPopup").html("<p>清空收藏夹失败,请重试！</p>");
+                        $("#fapopup").click();
+                    }
+                });
+                $("#deleteFavoritesPopup").popup("close");
+            });
+        });
+
+        $(document).on("pagecreate", "#pageMyProducts", function () {
+            var customerId = localStorage.getItem("CustomerID");
+            $.get("/api/Product/GetCustomerProductList", { customerId: customerId, type: 1 }, function (rsp) {
+                var html = "";
+                if (rsp != null || rsp != undefined) {
+                    $.each(rsp, function (i) {
+                        if (rsp[i].state == 1) {
+                            html += "<li><a href='../Product/ProductDetails.html' data-id='" + rsp[i].id + "' data-ajax='false'><img src='" + rsp[i].img + "'><h2>" + rsp[i].name + "</h2><p>" + rsp[i].info + "</p></a></li>";
+                        }
+                        else {
+                            html += "<li data-icon='false'><span style='float:right;color:#FF0000;width:20%;height:81.38px;text-align:center;line-height:81.38px;'>已下架</span>";
+                            html += "<a href='#' data-id='" + rsp[i].id + "'><img src='" + rsp[i].img + "'><h2>" + rsp[i].name + "</h2><p>" + rsp[i].info + "</p></a></li>";
+                        }
+                    });
+                }
+                $("#productList").html(html).listview('refresh');
+            });
+            //绑定点击事件
+            $("#productList").on("tap", "a", function () {
+                var id = $(this).attr("data-id");
+                localStorage.setItem("ProductDetails_ID", id);
+            });
+
+            //绑定搜索按钮
+            $("#searchButton4").on("tap", function () {
+                var name = $("#search4").val();
+                $.get("/api/Product/GetSearchCustomerProductList", { customerId: customerId, type: 1, name: name }, function (rsp) {
+                    var html = "";
+                    if (rsp != null || rsp != undefined) {
+                        $.each(rsp, function (i) {
+                            if (rsp[i].state == 1) {
+                                html += "<li><a href='../Product/ProductDetails.html' data-id='" + rsp[i].id + "' data-ajax='false'><img src='" + rsp[i].img + "'><h2>" + rsp[i].name + "</h2><p>" + rsp[i].info + "</p></a></li>";
+                            }
+                            else {
+                                html += "<li data-icon='false'><span style='float:right;color:#FF0000;width:20%;height:81.38px;text-align:center;line-height:81.38px;'>已下架</span>";
+                                html += "<a href='#' data-id='" + rsp[i].id + "'><img src='" + rsp[i].img + "'><h2>" + rsp[i].name + "</h2><p>" + rsp[i].info + "</p></a></li>";
+                            }
+                        });
+                    }
+                    $("#productList").html(html).listview('refresh');
+                });
+                $("#searchPopup4").popup("close");
+            });
+        });
+
+        $(document).on("pagecreate", "#pageOrders", function () {
+            var customerId = localStorage.getItem("CustomerID");
+            $.get("/api/Trade/GetCustomerTradeList", { customerId: customerId }, function (rsp) {
+                var html = "";
+                if (rsp != null || rsp != undefined) {
+                    $.each(rsp, function (i) {
+                        if (rsp[i].type == 0 && html.indexOf("等待支付") == -1) {
+                            html += "<li data-role='list-divider'>等待支付</li>"
+                        } else if (rsp[i].type == 1 && html.indexOf("已支付") == -1) {
+                            html += "<li data-role='list-divider'>已支付</li>"
+                        } else if (rsp[i].type == 2 && html.indexOf("已取消") == -1) {
+                            html += "<li data-role='list-divider'>已取消</li>"
+                        }
+                        html += "<li><a href='#pageTrade' data-id='" + rsp[i].id + "'><h2>" + rsp[i].time + "</h2><p><b>" + rsp[i].productName + "</b>  ￥:" + rsp[i].money + "</p></a></li>";
+                    });
+                }
+                $("#ordersList").html(html).listview('refresh');
+            });
+
+            //绑定搜索按钮
+            $("#searchButton3").on("tap", function () {
+                var productName = $("#search3").val();
+                var startTime = $("#starTime").val();
+                var endTime = $("#endTime").val();
+                $.get("/api/Trade/GetCustomerTradeSearchList", { customerId: customerId, productName: productName, startTime: startTime, endTime: endTime }, function (rsp) {
+                    var html = "";
+                    if (rsp != null || rsp != undefined) {
+                        $.each(rsp, function (i) {
+                            if (rsp[i].type == 0 && html.indexOf("等待支付") == -1) {
+                                html += "<li data-role='list-divider'>等待支付</li>"
+                            } else if (rsp[i].type == 1 && html.indexOf("已支付") == -1) {
+                                html += "<li data-role='list-divider'>已支付</li>"
+                            } else if (rsp[i].type == 2 && html.indexOf("已取消") == -1) {
+                                html += "<li data-role='list-divider'>已取消</li>"
+                            }
+                            html += "<li><a href='#pageTrade' data-id='" + rsp[i].id + "'><h2>" + rsp[i].time + "</h2><p><b>" + rsp[i].productName + "</b>  ￥:" + rsp[i].money + "</p></a></li>";
+                        });
+                    }
+                    $("#ordersList").html(html).listview('refresh');
+                    $("#searchPopup3").popup("close");
+                });
+            });
+
+            //绑定点击列表事件
+            $("#ordersList").on("tap", "a", function () {
+                var id = $(this).attr("data-id");
+                $.get("/api/Trade/GetTrade", { id: id }, function (rsp) {
+                    if (rsp != null || rsp != undefined) {
+                        $("#tradeId").text(rsp.id);
+                        $("#tproductName").text(rsp.productName);
+                        $("#tpaymentType").text(rsp.paymentType);
+                        $("#tnum").text(rsp.num);
+                        $("#typeDescript").text(rsp.typeDescript);
+                        $("#tinfo").text(rsp.info);
+                        $("#ttime").text(rsp.time);
+                        $("#tmoney").text(rsp.money);
+                        $("#tdiscountMoney").text(rsp.discountMoney);
+                        $("#tdiscountWay").text(rsp.discountWay);
+                        $("#tcustomerId").text(rsp.customerId);
+                        $("#tproductId").text(rsp.productId);
+                        if (rsp.type == 0) {
+                            $("#navbar").show();
+                        } else {
+                            $("#navbar").hide();
+                        }
+                    }
+                });
+            });
+
+            $("#navbar ul li a").on("tap", function () {
+                var tradeId = $("#tradeId").text();
+                var newType = $(this).attr("data-val");
+                var productId = $("#tproductId").text();
+                $.post("/api/Trade/UpdateTradeInfo", { id: tradeId, type: newType, customerId: customerId, productId: productId }, function (rsp) {
+                    if (rsp == "成功") {
+                        $("#myPopup").html("<p>操作成功！</p>");
+                        $("#popup").click();
+                        setTimeout('location.href = "../Customer/Customer.html"', 1200);
+                    } else {
+                        $("#myPopup").html("<p>操作失败,请重试！</p>");
+                        $("#popup").click();
+                    }
+                });
+            });
+        });
+
+        $(document).on("pagecreate", "#pagePersonalData", function () {
+            var id = localStorage.getItem("CustomerID");
+            $.get("/api/Customer/GetCustomer", { id: id }, function (rsp) {
+                if (rsp != null || rsp != undefined) {
+                    $("#headImg").attr('src', rsp.headimgurl).attr("height", "60px");
+                    $("#cuName").text(rsp.name);
+                    $("#sex").text(rsp.sex);
+                    $("#phone").text(rsp.phone);
+                    $("#address").text(rsp.addr);
+                    //对话框默认值赋值
+                    $("#nameEdit").val(rsp.name);
+                    var _sex = rsp.sex == "男" ? 1 : rsp.sex == "女" ? 0 : -1;
+                    $("#sexEdit").val(_sex).selectmenu('refresh');
+                    $("#phoneEdit").val(rsp.phone);
+                    $("#addressEdit").val(rsp.addr);
+                }
+            });
+
+            $(".ui-grid-c a").on("tap", function () {
+                var img = $(this).find("img").attr("src");
+                $.post("/api/Customer/UpdateCustomerImg", { id: id, img: img }, function (rsp) {
+                    if (rsp == "成功") {
+                        $("#headImg").attr('src', img).attr("height", "60px");
+                        $("#popupHeadImg").popup("close");
+                    }
+                });
+            });
+
+            $("#nameButton").on("tap", function () {
+                var newName = $("#nameEdit").val();
+                if (newName == "")
+                    return false;
+                $.post("/api/Customer/UpdateCustomerName", { id: id, name: newName }, function (rsp) {
+                    if (rsp == "成功") {
+                        $("#cuName").text(newName);
+                        $("#popupCuName").popup("close");
+                    }
+                });
+            });
+
+            $("#sexButton").on("tap", function () {
+                var newSex = $("#sexEdit").val();
+                $.post("/api/Customer/UpdateCustomerSex", { id: id, sex: newSex }, function (rsp) {
+                    if (rsp == "成功") {
+                        $("#sex").text(newSex == 1 ? "男" : newSex == 0 ? "女" : "未知");
+                        $("#popupCuSex").popup("close");
+                    }
+                });
+            });
+
+            $("#phoneButton").on("tap", function () {
+                var newphone = $("#phoneEdit").val();
+                $.post("/api/Customer/UpdateCustomerPhone", { id: id, phone: newphone }, function (rsp) {
+                    if (rsp == "成功") {
+                        $("#phone").text(newphone);
+                        $("#popupPhone").popup("close");
+                    }
+                });
+            });
+
+            $("#addressButton").on("tap", function () {
+                var newAddress = $("#addressEdit").val();
+                $.post("/api/Customer/UpdateCustomerAddress", { id: id, address: newAddress }, function (rsp) {
+                    if (rsp == "成功") {
+                        $("#address").text(newAddress);
+                        $("#popupAddr").popup("close");
+                    }
+                });
+            });
+        });
+
+        $(document).on("pagecreate", "#pageMyCubilose", function () {
+            var customerId = localStorage.getItem("CustomerID");
+            $.get("/api/Customer/GetCustomerCubilose", { customerId: customerId }, function (rsp) {
+                var html = "";
+                if (rsp != null || rsp != undefined) {
+                    $.each(rsp, function (i) {
+                        html += "<li data-icon='false'><a href='#'><img src='" + rsp[i].img + "'><h>" + rsp[i].cubiloseName + "</h2><p>" + rsp[i].info + "</p><span class='ui-li-count'>" + rsp[i].surplusNum + "</span></a></li>";
+                    });
+                }
+                $("#cubiloseList").html(html).listview('refresh');
+            });
+        });
+
+        $(document).on("pagecreate", "#pageDelivery", function () {
+            var customerId = localStorage.getItem("CustomerID");
+            $.get("/api/Customer/GetCustomerDelivery", { customerId: customerId }, function (rsp) {
+                var html = "";
+                if (rsp != null || rsp != undefined) {
+                    $.each(rsp, function (i) {
+                        html += "<li data-icon='false'><a href='#pageDeliveryInfo' data-id='" + rsp[i].delivery_id + "'><h2>" + rsp[i].delivery_time.substring(0, 10) + "</h2><p>" + rsp[i].target_name + " | " + rsp[i].target_phone + " | " + rsp[i].target_addr + "</p></a></li>";
+                    });
+                }
+                $("#deliveryList").html(html).listview('refresh');
+            });
+
+            $("#deliveryList").on("tap", "a", function () {
+                var deliveryId = $(this).attr("data-id");
+                if (deliveryId != 0) {
+                    $.get("/api/Customer/GetDelivery", { deliveryId: deliveryId }, function (rsp) {
+                        if (rsp != "" || rsp != undefined) {
+                            $("#dTime").text(rsp.time);
+                            $("#dType").text(rsp.type);
+                            $("#dName").text(rsp.name);
+                            $("#dPhone").text(rsp.phone);
+                            $("#dAddr").text(rsp.addr);
+                            $("#dGoodsInfo").text(rsp.goodsInfo);
+                            $("#dMemo").text(rsp.memo);
+                        }
+                    });
+                }
+            });
+        });
+
+        $(document).on("pagecreate", "#tradePage", function () {
+            var customerId = localStorage.getItem("CustomerID");
+            //加载收货地址信息
+            $.get("/api/Customer/GetCustomerAddressList", { customerId: customerId }, function (rsp) {
+                var addrhtml = "";
+                var addresshtml = "";
+                if (rsp != null && rsp != undefined && rsp.length > 0) {
+                    $.each(rsp, function (i) {
+                        addresshtml += "<li data-icon='location'><a href='' data-id='" + rsp[i].addr_id + "'><h2>" + rsp[i].person + "</h2><p>联系电话：" + rsp[i].phone + "</p><p>收货地址：" + rsp[i].address + "</p></a></li>";
+                    });
+                    addresshtml += "<li data-icon='plus'><a href='#' flag='1'>添加新地址</a></li>"
+                    addrhtml += "<li data-icon='location'><a href='#popupAddr2' data-rel='popup' data-position-to='window'><h2>" + rsp[0].person + "</h2><p>联系电话：" + rsp[0].phone + "</p><p>收货地址：" + rsp[0].address + "</p></a></li>";
+                }
+                else {
+                    addrhtml += "<li data-icon='location'><a href='#popupAddr2' data-rel='popup' data-position-to='window'>点击添加收货地址</a></li>";
+                }
+                $("#addrListview").html(addrhtml).listview('refresh');//默认显示第一条
+                $("#addressList").html(addresshtml).listview('refresh');//加载所有地址
+                if (addresshtml != "") {
+                    $("#addDIV").hide();
+                    $("#addressList").show();
+                }
+            });
+
+            //加载货物信息
+            var html = "";
+            var totalPrice = 0;
+            $.each($("#shopList li"), function (i) {//遍历购物车信息
+                if ($(this).find("a").attr("data-price") != undefined) {
+                    html += "<li data-icon='false'><a data-id='" + $(this).find("a").attr("data-id") + "' data-price='" + $(this).find("a").attr("data-price") + "' href='#'><img src='" + $(this).find("img").attr("src") + "'><h2>" + $(this).find("h2").text() + "</h2><p>￥" + $(this).find("a").attr("data-price") + "</p><span class='ui-li-count'>1</span></a></li>";
+                    totalPrice += $(this).find("a").attr("data-price") * 1;
+                }
+            })
+
+            //加载客户优惠信息
+            $.get("/api/Customer/GetCustomer", { id: customerId }, function (rsp) {
+                if (rsp != null && rsp != undefined) {
+                    if (rsp.level > 0) {
+                        html += "<li data-icon='false'><a href='#'><p style='float:right'>VIP" + rsp.level + ":" + (10 - rsp.level) + "折优惠</p></a></li>";
+                        totalPrice = totalPrice * (10 - rsp.level) * 0.1;
+                        $("#p_discount").text((10 - rsp.level) * 0.1);
+                    }
+                }
+                $("#productListview").html(html).listview('refresh');
+                $("#totalPrice").text(totalPrice.toFixed(2));
+            });
+
+            //加载支付方式信息
+            $.get("/api/Payment/GetPaymentList", function (rsp) {
+                var payhtml = "";
+                if (rsp != null && rsp != undefined) {
+                    $.each(rsp, function (i) {
+                        payhtml += "<option value='" + rsp[i].payment_id + "'>" + rsp[i].payment_name + "</option>";
+                    });
+                }
+                $("#payment").html(payhtml).selectmenu('refresh');
+            });
+
+            //绑定点击地址事件
+            $("#addrListview").on("tap", function () {
+                if ($(this).find("p").text() != "") {
+                    $("#addDIV").hide();
+                    $("#addressList").show();
+                } else {
+                    $("#addDIV").show();
+                    $("#addressList").hide();
+                }
+            });
+
+            $("#productListview").on("click", "span", function () {
+                $("#p_id").attr("data-id",($(this).parent().attr("data-id")));
+                $("#p_id").attr("data-price", ($(this).parent().attr("data-price")));
+                $("#popup_num").click();
+            });
+
+            $("#numButton").on("tap", function () {
+                var number = $("#numEdit").val();
+                $.each($("#productListview li a"), function (i) {
+                    if ($(this).attr("data-id") == $("#p_id").attr("data-id")) {
+                        var oldNumber = $(this).find("span").text();
+                        $(this).find("span").text(number);
+                        $(this).find("p").text("￥" + $("#p_id").attr("data-price"));
+                        totalPrice += ($("#p_id").attr("data-price") * (number - oldNumber) * $("#p_discount").text());
+                    }
+                });
+                $("#popupNum").popup("close");
+                $("#totalPrice").text(totalPrice.toFixed(2));
+            });
+
+            //绑定地址对话框点击选择按钮
+            $("#addressList").on("tap", "a", function () {
+                if ($(this).attr("flag") == '1') {
+                    $("#addDIV").show();
+                    $("#addressList").hide();
+                    return false;
+                }
+                else {
+                    for (i = 0; i < 3; i++) {
+                        $("#addrListview").find("a").children().eq(i).text($(this).children().eq(i).text());
+                    }
+                    $("#popupAddr2").popup("close");
+                }
+            });
+
+            //绑定提交按钮
+            $("#SubmitBtn").on("tap", function () {
+                var payType = $("#payment").val();
+                var receivingInfo = "";
+                for (i = 0; i < 3; i++) {
+                    receivingInfo += $("#addrListview").find("a").children().eq(i).text() + "|";
+                }
+                receivingInfo = receivingInfo.substring(0, receivingInfo.length - 1);
+                var discount = $("#p_discount").text();
+                //分步添加
+                $.each($("#productListview li a"), function (i) {
+                    var productId = $(this).attr("data-id");
+                    var num = $(this).find("span").text();
+                    var totalPrice = $(this).attr("data-price") * num * discount;
+                    var discountWay = discount != "1" ? "VIP" + 10 - discount * 10 + "：" + discount * 10 + "折优惠" : "";
+                    var discountMoney = $(this).attr("data-price") * num - totalPrice;
+                    $.post("/api/Trade/AddTradeInfo", { totalPrice: totalPrice, customerId: customerId, productId: productId, num: num, discountWay: discountWay, discountMoney: discountMoney, payType: payType, receivingInfo: receivingInfo }, function (rsp) {
+                        if (rsp == "成功") {
+                            $("#myPopup_trade").html("<p>购买成功！</p>");
+                            $("#popup_trade").click();
+                            setTimeout('location.href = "../Product/ProductDetails.html"', 1200);//正式环境前往支付页面
+                        } else {
+                            $("#myPopup_trade").html("<p>购买失败！</p>");
+                            $("#popup_trade").click();
+                        }
+                    });
+                });
+            });
+
+            //绑定地址保存按钮
+            $("#newAddrBtn").on("tap", function () {
+                var person = $("#person").val();
+                var phone = $("#phone").val();
+                var address = $("#address").val();
+                $.post("/api/Customer/AddCustomerAddress", { customerId: customerId, person: person, phone: phone, address: address, serial: 0 }, function (rsp) {
+                    if (rsp == "成功") {
+                        $("#addrListview").html("<li data-icon='location'><a href='#popupAddr' data-rel='popup' data-position-to='window'><h2>" + person + "</h2><p>联系电话：" + phone + "</p><p>收货地址：" + address + "</p></a></li>").listview('refresh');
+                        //$("#addrListview").find("a").children().eq(0).text(person);
+                        //$("#addrListview").find("a").children().eq(1).text("联系电话：" + phone);
+                        //$("#addrListview").find("a").children().eq(2).text("收货地址：" + address);
+                        $("#popupAddr2").popup("close");
+                    } else {
+
+                    }
+                });
+
+            });
+
+        });
+    </script>
+</head>
+<body>
+    <!--个人中心主页-->
+    <div data-role="page" id="Home">
+        <div data-role="header" data-position="fixed">
+            <h1 role="heading">个人中心</h1>
+            <div data-role="navbar">
+                <ul id="manager" style="display:none">
+                    <li><a href="/home.html" data-icon="user" data-ajax="false">后台管理</a></li>
+                    <li><a href="../Product/Product.html" data-icon="home" data-ajax="false">首页</a></li>
+                    <li><a href="#myPopupDialog" data-rel="popup" data-position-to="window" data-transition="fade" data-icon="power">退出登陆</a></li>
+                </ul>
+                <ul>
+                    <li><a href="#pagePersonalData" data-icon="user">个人资料</a></li>
+                    <li><a href="../Product/Product.html" data-icon="home" data-ajax="false">首页</a></li>
+                    <li><a href="#myPopupDialog" data-rel="popup" data-position-to="window" data-transition="fade" data-icon="power">退出登陆</a></li>
+                </ul>
+            </div>
+        </div>
+        <div data-role="main" class="ui-content">
+            <ul data-role="listview">
+                <li><a href="#pageMyCubilose"><img src="/img/tools/product.png" class="ui-li-icon">我的物品</a></li>
+                <li><a href="#pageOrders"><img src="/img/tools/order.png" class="ui-li-icon">我的订单</a></li>
+                <li><a href="#pageDelivery"><img src="/img/tools/record.png" class="ui-li-icon">收货记录</a></li>
+                <li><a href="#pageMyProducts"><img src="/img/tools/myProduct.png" class="ui-li-icon">已买到宝贝</a></li>
+                <li><a href="#pageShoppingCar"><img src="/img/tools/shopcar.png" class="ui-li-icon">购物车</a></li>
+                <li><a href="#pageFavorites"><img src="/img/tools/favorites.png" class="ui-li-icon">收藏夹</a></li>
+            </ul>
+        </div>
+        <!--退出登陆对话框-->
+        <div data-role="popup" id="myPopupDialog">
+            <div data-role="main" class="ui-content">
+                <h2>退出确认</h2>
+                <a href="/login.html" data-ajax="false" class="ui-btn ui-btn-inline">确定</a>
+                <a href="#" class="ui-btn ui-btn-inline" data-rel="back">取消</a>
+            </div>
+        </div>
+        <div data-role="footer" style="text-align: center" data-position="fixed">
+            <p>CopyRight &copy;MeetMissCubilose</p>
+        </div>
+    </div>
+
+    <!--个人资料页面-->
+    <div data-role="page" id="pagePersonalData">
+        <div data-role="header" data-position="fixed">
+            <a href="#Home" class="ui-btn-left" data-icon="arrow-l">个人中心</a>
+            <h1>个人资料</h1>
+        </div>
+        <div data-role="main" class="ui-content">
+            <ul data-role="listview">
+                <li data-icon="false"><a href="#popupHeadImg" data-rel="popup" data-position-to="window">头像<div style="float:right;width:75%"><img src="" style="float:right" id="headImg"></div></a></li>
+                <li data-icon="false"><a href="#popupCuName" data-rel="popup" data-position-to="window">姓名<div style="float:right;width:75%"><span style="float:right" id="cuName"></span></div></a></li>
+                <li data-icon="false"><a href="#popupCuSex" data-rel="popup" data-position-to="window">性别<div style="float:right;width:75%"><span style="float:right" id="sex"></span></div></a></li>
+                <li data-icon="false"><a href="#popupPhone" data-rel="popup" data-position-to="window">联系电话<div style="float:right;width:75%"><span style="float:right" id="phone"></span></div></a></li>
+                <li data-icon="false"><a href="#popupAddr" data-rel="popup" data-position-to="window">联系地址<div style="float:right;width:75%"><span style="float:right;white-space:pre-wrap;" id="address"></span></div></a></li>
+                <li data-icon="location"><a href="../Customer/CustomerAddress.html" data-ajax="false" style="color:gray">管理收货地址</a></li>
+            </ul>
+            <!--头像编辑对话框-->
+            <div data-role="popup" id="popupHeadImg" data-overlay-theme="b" style="width:240px;">
+                <div data-role="main" class="ui-content">
+                    <div class="ui-grid-c">
+                        <div class="ui-block-a"><a href="#"><img src="../../img/default/default-a.png"></a></div>
+                        <div class="ui-block-b"><a href="#"><img src="../../img/default/default-b.png"></a></div>
+                        <div class="ui-block-c"><a href="#"><img src="../../img/default/default-c.png"></a></div>
+                        <div class="ui-block-d"><a href="#"><img src="../../img/default/default-d.png"></a></div>
+
+                        <div class="ui-block-a"><a href="#"><img src="../../img/default/default-e.png"></a></div>
+                        <div class="ui-block-b"><a href="#"><img src="../../img/default/default-f.png"></a></div>
+                        <div class="ui-block-c"><a href="#"><img src="../../img/default/default-g.png"></a></div>
+                        <div class="ui-block-d"><a href="#"><img src="../../img/default/default-h.png"></a></div>
+
+                        <div class="ui-block-a"><a href="#"><img src="../../img/default/default-i.png"></a></div>
+                        <div class="ui-block-b"><a href="#"><img src="../../img/default/default-j.png"></a></div>
+                        <div class="ui-block-c"><a href="#"><img src="../../img/default/default-k.png"></a></div>
+                        <div class="ui-block-d"><a href="#"><img src="../../img/default/default-l.png"></a></div>
+
+                        <div class="ui-block-a"><a href="#"><img src="../../img/default/default-m.png"></a></div>
+                        <div class="ui-block-b"><a href="#"><img src="../../img/default/default-n.png"></a></div>
+                        <div class="ui-block-c"><a href="#"><img src="../../img/default/default-o.png"></a></div>
+                        <div class="ui-block-d"><a href="#"><img src="../../img/default/default-p.png"></a></div>
+                    </div>
+                </div>
+            </div>
+            <!--姓名编辑对话框-->
+            <div data-role="popup" id="popupCuName" data-overlay-theme="b" style="width:250px;">
+                <div data-role="main" class="ui-content">
+                    <input type="text" name="nameEdit" id="nameEdit" data-clear-btn="true">
+                    <input type="button" id="nameButton" value="保存">
+                </div>
+            </div>
+            <!--性别编辑对话框-->
+            <div data-role="popup" id="popupCuSex" data-overlay-theme="b" style="width:250px;">
+                <div data-role="main" class="ui-content">
+                    <select name="sexEdit" id="sexEdit" data-native-menu="false">
+                        <option value="0">女</option>
+                        <option value="1">男</option>
+                        <option value="-1">未知</option>
+                    </select>
+                    <input type="button" id="sexButton" value="保存">
+                </div>
+            </div>
+            <!--联系电话编辑对话框-->
+            <div data-role="popup" id="popupPhone" data-overlay-theme="b" style="width:250px;">
+                <div data-role="main" class="ui-content">
+                    <input type="text" name="phoneEdit" id="phoneEdit" data-clear-btn="true">
+                    <input type="button" id="phoneButton" value="保存">
+                </div>
+            </div>
+            <!--联系地址编辑对话框-->
+            <div data-role="popup" id="popupAddr" data-overlay-theme="b" style="width:250px;">
+                <div data-role="main" class="ui-content">
+                    <textarea id="addressEdit" data-clear-btn="true"></textarea>
+                    <input type="button" id="addressButton" value="保存">
+                </div>
+            </div>
+        </div>
+        <div data-role="footer" style="text-align: center" data-position="fixed">
+            <p>CopyRight &copy;MeetMissCubilose</p>
+        </div>
+    </div>
+
+    <!--购物车页面-->
+    <div data-role="page" id="pageShoppingCar">
+        <div data-role="header" data-position="fixed" data-add-back-btn="true">
+            <h1>购物车</h1>
+        </div>
+        <div data-role="main" class="ui-content">
+            <ul data-role="listview" id="shopList"></ul>
+        </div>
+        <!--提示框-->
+        <a href="#shopCarPopup" data-rel="popup" id="carpopup" style="display:none" data-position-to="window"></a>
+        <div data-role="popup" id="shopCarPopup"></div>
+        <!--搜索对话框-->
+        <div data-role="popup" id="searchPopup">
+            <div data-role="main" class="ui-content">
+                <input type="search" name="search" id="search" placeholder="搜索内容...">
+                <input type="button" id="searchButton" value="搜索">
+            </div>
+        </div>
+        <!--清空购物车对话框-->
+        <div data-role="popup" id="deleteShopPopup">
+            <div data-role="main" class="ui-content">
+                <h2>清空购物车确认</h2>
+                <a href="javascript:volid(0)" id="deleteShop" data-ajax="false" class="ui-btn ui-btn-inline">确定</a>
+                <a href="#" class="ui-btn ui-btn-inline" data-rel="back">取消</a>
+            </div>
+        </div>
+        <div data-role="footer" style="text-align: center" data-position="fixed">
+            <div data-role="navbar">
+                <ul>
+                    <li><a href="../Product/Product.html" data-icon="home" data-ajax="false">首页</a></li>
+                    <li><a href="#searchPopup" data-rel="popup" data-position-to="window" data-transition="slideup" data-icon="search">搜索</a></li>
+                    <li><a href="#deleteShopPopup" data-rel="popup" data-position-to="window" data-icon="recycle">清空购物车</a></li>
+                    <li><a href="#tradePage" data-icon="arrow-d" data-ajax="false">结算</a></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!--收藏夹页面-->
+    <div data-role="page" id="pageFavorites">
+        <div data-role="header" data-position="fixed" data-add-back-btn="true">
+            <h1>收藏夹</h1>
+        </div>
+        <div data-role="main" class="ui-content">
+            <ul data-role="listview" id="favoritesList"></ul>
+        </div>
+        <!--提示框-->
+        <a href="#favoritesPopup" data-rel="popup" id="fapopup" style="display:none" data-position-to="window"></a>
+        <div data-role="popup" id="favoritesPopup"></div>
+        <!--搜索对话框-->
+        <div data-role="popup" id="searchPopup2">
+            <div data-role="main" class="ui-content">
+                <input type="search" name="search2" id="search2" placeholder="搜索内容...">
+                <input type="button" id="searchButton2" value="搜索">
+            </div>
+        </div>
+        <!--清空收藏夹对话框-->
+        <div data-role="popup" id="deleteFavoritesPopup">
+            <div data-role="main" class="ui-content">
+                <h2>清空收藏夹确认</h2>
+                <a href="javascript:volid(0)" id="deleteFavorites" data-ajax="false" class="ui-btn ui-btn-inline">确定</a>
+                <a href="#" class="ui-btn ui-btn-inline" data-rel="back">取消</a>
+            </div>
+        </div>
+        <div data-role="footer" style="text-align: center" data-position="fixed">
+            <div data-role="navbar">
+                <ul>
+                    <li><a href="../Product/Product.html" data-icon="home" data-ajax="false">首页</a></li>
+                    <li><a href="#searchPopup2" data-rel="popup" data-position-to="window" data-transition="slideup" data-icon="search">搜索</a></li>
+                    <li><a href="#deleteFavoritesPopup" data-rel="popup" data-position-to="window" data-icon="recycle">清空收藏夹</a></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!--已买到宝贝页面-->
+    <div data-role="page" id="pageMyProducts">
+        <div data-role="header" data-position="fixed" data-add-back-btn="true">
+            <h1>已买到宝贝</h1>
+            <a href="#searchPopup4" data-rel="popup" data-position-to="window" data-transition="slidedown" class="ui-btn-right" data-icon="search">搜索</a>
+        </div>
+        <div data-role="main" class="ui-content">
+            <ul data-role="listview" id="productList"></ul>
+        </div>
+        <!--搜索对话框-->
+        <div data-role="popup" id="searchPopup4">
+            <div data-role="main" class="ui-content">
+                <input type="search" name="search4" id="search4" placeholder="搜索内容...">
+                <input type="button" id="searchButton4" value="搜索">
+            </div>
+        </div>
+        <div data-role="footer" style="text-align: center" data-position="fixed">
+        </div>
+    </div>
+
+    <!--订单页面-->
+    <div data-role="page" id="pageOrders">
+        <div data-role="header" data-position="fixed" data-add-back-btn="true">
+            <h1>我的订单</h1>
+            <a href="#searchPopup3" data-rel="popup" data-position-to="window" data-transition="slidedown" class="ui-btn-right" data-icon="search">搜索</a>
+        </div>
+        <div data-role="main" class="ui-content">
+            <ul data-role="listview" id="ordersList"></ul>
+        </div>
+        <!--提示框-->
+        <a href="#ordersPopup" data-rel="popup" id="orderspopup" style="display:none" data-position-to="window"></a>
+        <div data-role="popup" id="ordersPopup"></div>
+        <!--搜索对话框-->
+        <div data-role="popup" id="searchPopup3">
+            <div data-role="main" class="ui-content">
+                <input type="search" name="search" id="search3" placeholder="搜索订单...">
+                <input type='date' name='starTime' id='starTime' value=''>To
+                <input type='date' name='endTime' id='endTime' value=''>
+                <input type="button" id="searchButton3" value="搜索">
+            </div>
+        </div>
+        <div data-role="footer" style="text-align: center" data-position="fixed">
+        </div>
+    </div>
+
+    <!--订单详情页面-->
+    <div data-role="page" id="pageTrade">
+        <div data-role="header" data-add-back-btn="true" data-position="fixed">
+            <h1>订单详情</h1>
+        </div>
+        <div data-role="main" class="ui-content">
+            <ul data-role="listview">
+                <li style="background-color:#F6F6F6"><div><span style="font-weight:bolder">订单日期</span><div style="float:right;width:75%"><span style="float:right;white-space:pre-wrap;font-weight:lighter;" id="ttime"></span></div></div></li>
+                <li style="background-color:#F6F6F6"><div><span style="font-weight:bolder">商品名称</span><div style="float:right;width:75%"><span style="float:right;white-space:pre-wrap;font-weight:lighter;" id="tproductName"></span></div></div></li>
+                <li style="background-color:#F6F6F6"><div><span style="font-weight:bolder">商品数目</span><div style="float:right;width:75%"><span style="float:right;white-space:pre-wrap;font-weight:lighter;" id="tnum"></span></div></div></li>
+                <li style="background-color:#F6F6F6"><div><span style="font-weight:bolder">优惠信息</span><div style="float:right;width:75%"><span style="float:right;white-space:pre-wrap;font-weight:lighter;" id="tdiscountWay"></span></div></div></li>
+                <li style="background-color:#F6F6F6"><div><span style="font-weight:bolder">优惠金额</span><div style="float:right;width:75%"><span style="float:right;white-space:pre-wrap;font-weight:lighter;" id="tdiscountMoney"></span></div></div></li>
+                <li style="background-color:#F6F6F6"><div><span style="font-weight:bolder">成交金额</span><div style="float:right;width:75%"><span style="float:right;white-space:pre-wrap;font-weight:lighter;" id="tmoney"></span></div></div></li>
+                <li style="background-color:#F6F6F6"><div><span style="font-weight:bolder">支付方式</span><div style="float:right;width:75%"><span style="float:right;white-space:pre-wrap;font-weight:lighter;" id="tpaymentType"></span></div></div></li>
+                <li style="background-color:#F6F6F6"><div><span style="font-weight:bolder">支付状态</span><div style="float:right;width:75%"><span style="float:right;white-space:pre-wrap;font-weight:lighter;" id="typeDescript"></span></div></div></li>
+            </ul>
+            <span id="tradeId" style="display:none"></span>
+            <span id="tproductId" style="display:none"></span>
+            <!--结果提示框-->
+            <a href="#myTradePopup" data-rel="popup" id="tradePopup" style="display:none" data-position-to="window"></a>
+            <div data-role="popup" id="myTradePopup"></div>
+        </div>
+        <div data-role="footer" style="text-align: center" data-position="fixed">
+            <div data-role="navbar" style="display:none" id="navbar">
+                <ul>
+                    <li><a href="#" data-val="2">取消支付</a></li>
+                    <li><a href="#" data-val="1">继续支付</a></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!--我的物品页面-->
+    <div data-role="page" id="pageMyCubilose">
+        <div data-role="header" data-position="fixed" data-add-back-btn="true">
+            <h1>我的物品</h1>
+        </div>
+        <div data-role="main" class="ui-content">
+            <ul data-role="listview" id="cubiloseList"></ul>
+        </div>
+        <div data-role="footer" style="text-align: center" data-position="fixed">
+        </div>
+    </div>
+
+    <!--收货记录页面-->
+    <div data-role="page" id="pageDelivery">
+        <div data-role="header" data-position="fixed" data-add-back-btn="true">
+            <h1>收货记录</h1>
+        </div>
+        <div data-role="main" class="ui-content">
+            <ul data-role="listview" id="deliveryList"></ul>
+        </div>
+        <div data-role="footer" style="text-align: center" data-position="fixed">
+        </div>
+    </div>
+
+    <!--收货记录详情页面-->
+    <div data-role="page" id="pageDeliveryInfo">
+        <div data-role="header" data-add-back-btn="true" data-position="fixed">
+            <h1>收货记录详情</h1>
+        </div>
+        <div data-role="main" class="ui-content">
+            <ul data-role="listview">
+                <li style="background-color:#F6F6F6"><div><span style="font-weight:bolder">配送日期</span><div style="float:right;width:75%"><span style="float:right;white-space:pre-wrap;font-weight:lighter;" id="dTime"></span></div></div></li>
+                <li style="background-color:#F6F6F6"><div><span style="font-weight:bolder">配送方式</span><div style="float:right;width:75%"><span style="float:right;white-space:pre-wrap;font-weight:lighter;" id="dType"></span></div></div></li>
+                <li style="background-color:#F6F6F6"><div><span style="font-weight:bolder">收件人</span><div style="float:right;width:75%"><span style="float:right;white-space:pre-wrap;font-weight:lighter;" id="dName"></span></div></div></li>
+                <li style="background-color:#F6F6F6"><div><span style="font-weight:bolder">联系电话</span><div style="float:right;width:75%"><span style="float:right;white-space:pre-wrap;font-weight:lighter;" id="dPhone"></span></div></div></li>
+                <li style="background-color:#F6F6F6"><div><span style="font-weight:bolder">收件地址</span><div style="float:right;width:75%"><span style="float:right;white-space:pre-wrap;font-weight:lighter;" id="dAddr"></span></div></div></li>
+                <li style="background-color:#F6F6F6"><div><span style="font-weight:bolder">货物信息</span><div style="float:right;width:75%"><span style="float:right;white-space:pre-wrap;font-weight:lighter;" id="dGoodsInfo"></span></div></div></li>
+                <li style="background-color:#F6F6F6"><div><span style="font-weight:bolder">备注信息</span><div style="float:right;width:75%"><span style="float:right;white-space:pre-wrap;font-weight:lighter;" id="dMemo"></span></div></div></li>
+            </ul>
+        </div>
+        <div data-role="footer" style="text-align: center" data-position="fixed">
+        </div>
+    </div>
+
+    <!--下单确认页面-->
+    <div data-role="page" id="tradePage">
+        <div data-role="header" data-position="fixed" data-add-back-btn="true">
+            <h1>确认订单</h1>
+        </div>
+        <div data-role="main" class="ui-content">
+            <ul data-role="listview" data-inset="true" id="addrListview"></ul>
+            <ul data-role="listview" data-inset="true" id="productListview"></ul>
+            <select name="payment" id="payment" data-native-menu="false"></select>
+            <p style="float:right">合计：<span id="totalPrice" style="font-size:28px;"></span></p>
+            <span style="display:none" id="p_discount">1</span>
+            <!--数量对话框-->
+            <a href="#popupNum" data-rel="popup" id="popup_num" style="display:none" data-position-to="window"></a>
+            <div data-role="popup" id="popupNum" data-overlay-theme="b">
+                <div data-role="main" class="ui-content">
+                    <input type="number" name="numEdit" id="numEdit" value="1">
+                    <input type="button" id="numButton" value="确定">
+                </div>
+                <span style="display:none" id="p_id"></span>
+            </div>
+            <!--地址选择弹窗-->
+            <div data-role="popup" id="popupAddr2" data-overlay-theme="b" class="ui-btn ui-btn-inline ui-corner-all" style="width:250px;">
+                <div data-role="main" class="ui-content" id="main1">
+                    <ul data-role="listview" id="addressList"></ul>
+                    <div id="addDIV">
+                        <input type="text" name="person" id="person" placeholder="姓名">
+                        <input type="tel" name="phone" id="phone" placeholder="电话">
+                        <textarea id="address" placeholder="地址"></textarea>
+                        <input type="button" id="newAddrBtn" value="保存">
+                    </div>
+                </div>
+            </div>
+            <!--提示框-->
+            <a href="#myPopup_trade" data-rel="popup" id="popup_trade" style="display:none" data-position-to="window"></a>
+            <div data-role="popup" id="myPopup_trade"></div>
+        </div>
+        <div data-role="footer" style="text-align: center;background-color:#ff7500" data-position="fixed">
+            <p style="color:white" id="SubmitBtn">提交订单</p>
+        </div>
+    </div>
+</body>

@@ -1,0 +1,196 @@
+﻿<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="https://apps.bdimg.com/libs/jquerymobile/1.4.5/jquery.mobile-1.4.5.min.css">
+    <link rel="stylesheet" href="../../themes/skyd.min.css" />
+    <link rel="stylesheet" href="../../themes/jquery.mobile.icons.min.css" />
+    <link rel="stylesheet" href="https://code.jquery.com/mobile/1.4.3/jquery.mobile.structure-1.4.3.min.css" />
+    <script src="https://apps.bdimg.com/libs/jquery/1.10.2/jquery.min.js"></script>
+    <script src="https://apps.bdimg.com/libs/jquerymobile/1.4.5/jquery.mobile-1.4.5.min.js"></script>
+    <title>支付方式信息</title>
+    <stytle>
+
+    </stytle>
+    <script>
+        $(document).on("pagecreate", "#pageList", function () {
+            if (localStorage.getItem("ManagerID") == undefined || localStorage.getItem("ManagerID") == null) {
+                location.href = "/login.html";
+            }
+            $.get("/api/Payment/GetPaymentList", function (rsp) {
+                var html = "";
+                if (rsp != null || rsp != undefined) {
+                    $.each(rsp, function (i) {
+                        html += "<li><span style='display:none;float:right;background-color:#FF0000;color:#ffffff;width:20%;height:43.38px;text-align:center;line-height:43.38px;'>删 除</span>";//滑动显示删除
+                        html += "<a href='#pagePayment' data-id='" + rsp[i].payment_id + "'>" + rsp[i].payment_name + "</a></li>";
+                    });
+                }
+                $("#mList").html(html).listview('refresh');
+            });
+
+            //绑定点击列表事件
+            $("#mList").on("tap", "a", function () {
+                var id = $(this).attr("data-id");
+                $.get("/api/Payment/GetPayment", { id: id }, function (rsp) {
+                    if (rsp != null || rsp != undefined) {
+                        $("#tid").text(rsp.id);
+                        $("#tname").text(rsp.name);
+                        //初始化编辑对话框值
+                        $("#nameEdit").val(rsp.name);
+                    }
+                });
+            });
+
+            //绑定向左滑动列表事件
+            $("#mList").on("swipeleft", "a", function () {
+                $(this).siblings("span").show();
+            });
+            //绑定向右滑动列表事件
+            $("#mList").on("swiperight", "a", function () {
+                $(this).siblings("span").hide();
+            });
+            //绑定点击删除事件
+            $("#mList").on("tap", "span", function () {
+                var id = $(this).siblings("a").attr("data-id");
+                $.post("/api/Payment/DeletePayment", { id: id }, function (rsp) {
+                    if (rsp == "成功") {
+                        $("#deletePopup").html("<p>删除成功！</p>");
+                        $("#popup_delete").click();
+                        setTimeout('location.href = "../Trade/Payment.html"', 1200);
+                    } else {
+                        $("#deletePopup").html("<p>有客户信息包含该支付信息，无法删除！</p>");
+                        $("#popup_delete").click();
+                    }
+                });
+            });
+
+            //绑定搜索按钮
+            $("#searchButton").on("tap", function () {
+                var name = $("#search").val();
+                $.get("/api/Payment/GetSearchPaymentList",{name:name}, function (rsp) {
+                    var html = "";
+                    if (rsp != null || rsp != undefined) {
+                        $.each(rsp, function (i) {
+                            html += "<li><span style='display:none;float:right;background-color:#FF0000;color:#ffffff;width:20%;height:43.38px;text-align:center;line-height:43.38px;'>删 除</span>";//滑动显示删除
+                            html += "<a href='#pagePayment' data-id='" + rsp[i].payment_id + "'>" + rsp[i].payment_name + "</a></li>";
+                        });
+                    }
+                    $("#mList").html(html).listview('refresh');
+                });
+                $("#searchPopup").popup("close");
+            });
+        });
+       
+        $(document).on("pagecreate", "#pageAdd", function () {
+            //绑定添加提交按钮
+            $("#addButton").on("click", function () {
+                var name = $("#fullname").val();
+                if (name == "") {
+                    $("#myPopup_add").html("<p>名称不能为空！</p>");
+                    $("#popup_add").click();
+                    setTimeout('$("#myPopup_add").popup("close")', 1000);
+                    return false;
+                }
+                $.post("/api/Payment/AddPayment", { name: name }, function (rsp) {
+                    if (rsp == "成功") {
+                        $("#myPopup_add").html("<p>添加成功！</p>");
+                        $("#popup_add").click();
+                        setTimeout('location.href = "../Trade/Payment.html"', 1200);
+                    } else {
+                        $("#myPopup_add").html("<p>添加失败,请重试！</p>");
+                        $("#popup_add").click();
+                    }
+                });
+            });
+        });
+            
+        $(document).on("pagecreate", "#pagePayment", function () {
+            //绑定修改提交按钮
+            $("#updateButton").on("click", function () {
+                var id = $("#tid").text();
+                var name = $("#nameEdit").val();
+                if (name == "") {
+                    return false;
+                }
+                $.post("/api/Payment/UpdatePayment", { id: id, name: name }, function (rsp) {
+                    if (rsp == "成功") {
+                        $("#tname").text(name);
+                        $("#popupName").popup("close");
+                        //取消返回按钮aJax跳转，就会重新刷新
+                        $("#backButton").attr("data-ajax", "false");
+                    }
+                });
+            });
+        });
+    </script>
+</head>
+<body>
+    <!--支付方式列表页面-->
+    <div data-role="page" id="pageList">
+        <div data-role="header" data-position="fixed">
+            <h1>支付方式</h1>
+            <div data-role="navbar">
+                <ul>
+                    <li><a href="#pageAdd" data-icon="plus">添加</a></li>
+                    <li><a href="../../home.html#menuList" data-icon="home" data-ajax="false">管理中心</a></li>
+                    <li><a href="#searchPopup" data-rel="popup" data-position-to="window" data-transition="slidedown" data-icon="search">搜索</a></li>
+                </ul>
+            </div>
+        </div>
+        <div data-role="main" class="ui-content">
+            <ul data-role="listview" id="mList"></ul>
+            <!--删除提示框-->
+            <a href="#deletePopup" data-rel="popup" id="popup_delete" style="display:none" data-position-to="window"></a>
+            <div data-role="popup" id="deletePopup"></div>   
+            <!--搜索对话框-->            
+            <div data-role="popup" id="searchPopup">
+                <div data-role="main" class="ui-content">
+                    <input type="search" name="search" id="search" placeholder="搜索内容...">
+                    <input type="button" id="searchButton" value="搜索">
+                </div> 
+            </div> 
+        </div>
+        <div data-role="footer" style="text-align: center" data-position="fixed">
+            <p>CopyRight &copy;MeetMissCubilose</p>
+        </div>
+    </div>
+
+    <!--支付方式详情&修改页面-->
+    <div data-role="page" id="pagePayment">
+        <div data-role="header" data-position="fixed" data-add-back-btn="true">
+            <h1>支付方式信息</h1>
+        </div>
+        <div data-role="main" class="ui-content">
+            <ul data-role="listview">
+                <li style="background-color:#F6F6F6"><div><span style="font-weight:bolder">ID</span><div style="float:right;width:75%"><span style="float:right;white-space:pre-wrap;font-weight:lighter;" id="tid"></span></div></div></li>
+                <li data-icon="false"><a href="#popupName" data-rel="popup" data-position-to="window">名称<div style="float:right;width:75%"><span style="float:right" id="tname"></span></div></a></li> 
+            </ul>
+            <!--姓名编辑对话框-->
+            <div data-role="popup" id="popupName" data-overlay-theme="b" style="width:250px;">
+                <div data-role="main" class="ui-content">
+                    <input type="text" name="nameEdit" id="nameEdit" data-clear-btn="true">
+                    <input type="button" id="updateButton" value="保存">
+                </div>
+            </div>
+        </div>
+        <div data-role="footer" style="text-align: center" data-position="fixed">
+            <p>CopyRight &copy;MeetMissCubilose</p>
+        </div>
+    </div>
+
+    <!--新增支付方式页面-->
+    <div data-role="page" id="pageAdd">
+        <div data-role="header" data-add-back-btn="true">
+            <h1>新增支付方式</h1>            
+        </div>
+        <div data-role="main" class="ui-content">
+            <label for="fullname">名称：</label>
+            <input type="text" name="fullname" id="fullname">
+            <input type="button" id="addButton" value="提交">
+            <!--提示框-->
+            <a href="#myPopup_add" data-rel="popup" id="popup_add" style="display:none" data-position-to="window"></a>
+            <div data-role="popup" id="myPopup_add"></div>           
+        </div>
+        <div data-role="footer" style="text-align: center" data-position="fixed">
+            <p>CopyRight &copy;MeetMissCubilose</p>
+        </div>
+    </div>
+</body>

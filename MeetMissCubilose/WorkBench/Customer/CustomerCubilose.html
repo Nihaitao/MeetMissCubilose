@@ -1,0 +1,370 @@
+﻿<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="https://apps.bdimg.com/libs/jquerymobile/1.4.5/jquery.mobile-1.4.5.min.css">
+    <link rel="stylesheet" href="../../themes/skyd.min.css" />
+    <link rel="stylesheet" href="../../themes/jquery.mobile.icons.min.css" />
+    <link rel="stylesheet" href="https://code.jquery.com/mobile/1.4.3/jquery.mobile.structure-1.4.3.min.css" />
+    <script src="https://apps.bdimg.com/libs/jquery/1.10.2/jquery.min.js"></script>
+    <script src="https://apps.bdimg.com/libs/jquerymobile/1.4.5/jquery.mobile-1.4.5.min.js"></script>
+    <title>客户</title>
+
+    <script>
+        $(document).on("pagecreate", "#pageCustomerData", function () {
+            if (localStorage.getItem("ManagerID") == undefined || localStorage.getItem("ManagerID") == null) {
+                location.href = "/login.html";
+            }
+            //获取客户列表
+            $.get("/api/Customer/GetCustomerData", function (rsp) {
+                var html = "";
+                if (rsp != null && rsp != undefined) {
+                    $.each(rsp, function (i) {
+                        if (rsp[i].cu_state == 1)
+                            html += "<li><a href='#pageCuCubilose' data-id='" + rsp[i].cu_id + "'><img src='" + rsp[i].cu_headimgurl + "' class='ui-li-icon'>" + rsp[i].cu_name + "</a></li>";
+                        else
+                            html += "<li><a style='color:gray' href='#pageCuCubilose' data-id='" + rsp[i].cu_id + "'><img src='" + rsp[i].cu_headimgurl + "' class='ui-li-icon'>" + rsp[i].cu_name + "</a></li>";
+                    });
+                }
+                $("#mList").html(html).listview('refresh');
+            });
+
+            //绑定点击事件
+            $("#mList").on("tap", "a", function () {
+                var customerId = $(this).attr("data-id");
+                //客户剩余物品信息
+                $.get("/api/Customer/GetCustomerCubiloseSurplus", { customerId: customerId }, function (rsp) {
+                    var html = "<li data-role='list-divider'><a href='#pageCubilose' style='text-decoration:none;float:right;color:#333333'><h3>✚</h3></a><h3>燕窝信息</h3></li>";
+                    if (rsp != null && rsp != undefined) {
+                        $.each(rsp, function (i) {
+                            html += "<li data-icon='false'><a href='#'><img src='" + rsp[i].img + "'><h2 data-id = '" + rsp[i].cubiloseId + "'>" + rsp[i].cubiloseName + "</h2><p>" + rsp[i].info + "</p><span class='ui-li-count'>" + rsp[i].surplusNum + "</span></a></li>";
+                        });
+                    }
+                    $("#cubiloseList").html(html).listview('refresh');
+                });
+                //客户物品配送信息
+                $.get("/api/Customer/GetCustomerDelivery", { customerId: customerId }, function (rsp) {
+                    var html = "<li data-role='list-divider'><a href='#pageDelivery' style='text-decoration:none;float:right;color:#333333' data-id='0'><h3>✚</h3></a><h3>配送信息</h3></li>";
+                    if (rsp != null && rsp != undefined) {
+                        $.each(rsp, function (i) {
+                            html += "<li data-icon='false'><a href='#pageDeliveryInfo' data-id='" + rsp[i].delivery_id + "'><h2>" + rsp[i].delivery_time.substring(0, 10) + "</h2><p>" + rsp[i].target_name + " | " + rsp[i].target_phone + " | " + rsp[i].target_addr + "</p></a></li>";
+                        });
+                    }
+                    $("#deliveryList").html(html).listview('refresh');
+                });
+                $("#customerId").text(customerId);
+            });
+
+            //绑定搜索按钮
+            $("#searchButton").on("tap", function () {
+                var name = $("#search").val();
+                $.get("/api/Customer/GetSearchCustomerData", { name: name }, function (rsp) {
+                    var html = "";
+                    if (rsp != null && rsp != undefined) {
+                        $.each(rsp, function (i) {
+                            if (rsp[i].cu_state == 1)
+                                html += "<li><a href='#pageCuCubilose' data-id='" + rsp[i].cu_id + "'><img src='" + rsp[i].cu_headimgurl + "' class='ui-li-icon'>" + rsp[i].cu_name + "</a></li>";
+                            else
+                                html += "<li><a style='color:gray' href='#pageCuCubilose' data-id='" + rsp[i].cu_id + "'><img src='" + rsp[i].cu_headimgurl + "' class='ui-li-icon'>" + rsp[i].cu_name + "</a></li>";
+                        });
+                    }
+                    $("#mList").html(html).listview('refresh');
+                });
+                $("#searchPopup").popup("close");
+            });
+
+        });
+
+        $(document).on("pagecreate", "#pageCuCubilose", function () {
+            //绑定点击配送信息
+            $("#deliveryList").on("tap", "a", function () {
+                var deliveryId = $(this).attr("data-id");
+                if (deliveryId != 0){
+                    $.get("/api/Customer/GetDelivery", { deliveryId: deliveryId }, function (rsp) {
+                        if (rsp != "" || rsp != undefined) {
+                            $("#tTime").text(rsp.time);
+                            $("#tType").text(rsp.type);
+                            $("#tName").text(rsp.name);
+                            $("#tPhone").text(rsp.phone);
+                            $("#tAddr").text(rsp.addr);
+                            $("#tGoodsInfo").text(rsp.goodsInfo);
+                            $("#tMemo").text(rsp.memo);
+                        }
+                    });
+                }
+            });
+        });
+
+        $(document).on("pagecreate", "#pageCubilose", function () {
+            //初始化燕窝下拉列表
+            $.get("/api/Cubilose/GetCubiloseList", function (rsp) {
+                var html = "";
+                if (rsp != null && rsp != undefined) {
+                    $.each(rsp, function (i) {
+                        html += "<option value='" + rsp[i].id + "'>" + rsp[i].name + "</option>";
+                    });
+                }
+                $("#CubiloseComponent select").html(html).selectmenu("refresh");
+            });
+
+            //绑定添加成分事件
+            $("#CubiloseComponent a:eq(0)").on("tap", function () {
+                //创建新成分表单
+                var index = $("#NewCubiloseComponent").find("input").length;
+                var component = $("#CubiloseComponent").clone();
+                component.find("a:eq(0)").html("<img src='../../img/tools/delete.png'>");//添加按钮变成删除
+                component.find("input").val("");//数目栏清空
+
+                var text = component.find("option:eq(0)").text();
+                component.find("span").text(text);//下拉菜单默认第一条显示
+                $("#NewCubiloseComponent").append(component.html());//插入到新成分DIV
+            });
+
+            //绑定删除成分事件
+            $("#NewCubiloseComponent").on("click", "a.ui-link", function () {//tap可能会触发多次
+                var i = 0;
+                while (i < 4) {
+                    $(this).next().remove();
+                    i++;
+                }
+                $(this).remove();
+            })
+            //绑定新成分的下拉单更改事件，因为jQuery Mobile生成的Select会出现问题，具体解决方案还待研究，先这样吧
+            $("#NewCubiloseComponent").on("change", "select", function () {
+                $(this).siblings("span").text($(this).children("option:selected").text());
+            });
+            //绑定添加提交按钮事件
+            $("#checkButton").on("click", function () {
+                var customerId = $("#customerId").text();
+                var cubilose = $("#CubiloseComponent").find("option:selected").val();
+                var num = $("#CubiloseComponent").find("input").val();
+                if (num <= 0) {
+                    $("#myPopup_check").html("<p>请输入正确的数目！</p>");
+                    $("#popup_check").click();
+                    setTimeout('$("#popup_check").popup("close")', 1000);
+                    return false;
+                }
+                $.each($("#NewCubiloseComponent").find("option:selected"), function (i) {
+                    cubilose += "|" + $(this).val();
+                    num += "|" + $(this).parent().parent().parent().next().next().find("input").val();
+                });
+                $.post("/api/Customer/UpdateCustomerCubilose", { customerId: customerId, cubilose: cubilose, num: num }, function (rsp) {
+                    if (rsp == "成功") {
+                        $("#myPopup_check").html("<p>操作成功！</p>");
+                        $("#popup_check").click();
+                        setTimeout('location.href = "../Customer/CustomerCubilose.html"', 1200);
+                    } else {
+                        $("#myPopup_check").html("<p>操作失败,请重试！</p>");
+                        $("#popup_check").click();
+                    }
+                });
+            });
+        });
+
+        $(document).on("pagecreate", "#pageDelivery", function () {
+            //初始化该客户燕窝下拉列表
+            var html = "";
+            $.each($("#cubiloseList li h2"), function () {
+                html += "<option data-num='"+$(this).parent().find("span").text()+"' value='" + $(this).attr("data-id") + "'>" + $(this).text() + "</option>";
+            });                
+            $("#Cubilose select").html(html).selectmenu("refresh");
+           
+
+            //绑定添加成分事件
+            $("#Cubilose a:eq(0)").on("tap", function () {
+                //创建新成分表单
+                var index = $("#NewCubilose").find("input").length;
+                var component = $("#Cubilose").clone();
+                component.find("a:eq(0)").html("<img src='../../img/tools/delete.png'>");//添加按钮变成删除
+                component.find("input").val("");//数目栏清空
+
+                var text = component.find("option:eq(0)").text();
+                component.find("span").text(text);//下拉菜单默认第一条显示
+                $("#NewCubilose").append(component.html());//插入到新成分DIV
+            });
+
+            //绑定删除成分事件
+            $("#NewCubilose").on("click", "a.ui-link", function () {//tap可能会触发多次
+                var i = 0;
+                while (i < 6) {
+                    $(this).next().remove();
+                    i++;
+                }
+                $(this).remove();
+            })
+            //绑定新成分的下拉单更改事件，因为jQuery Mobile生成的Select会出现问题，具体解决方案还待研究，先这样吧
+            $("#NewCubilose").on("change", "select", function () {
+                $(this).siblings("span").text($(this).children("option:selected").text());
+            });
+            //绑定添加提交按钮事件
+            $("#addButton").on("click", function () {
+                var time = $("#time").val();
+                var type = $("#type").val();
+                var money = $("#money").val();
+                var memo = $("#memo").val();
+                var name = $("#name").val();
+                var phone = $("#phone").val();
+                var address = $("#address").val();
+                if (time == "" || type == "" || money == "" || name == "" || phone == "" || address == "") {
+                    $("#myPopup_add").html("<p>请补全正确的配送信息</p>");
+                    $("#popup_add").click();
+                    return false;
+                }
+                var cubilose = $("#Cubilose").find("option:selected").val();
+                var num = $("#Cubilose").find("input").eq(0).val();
+                if (num > $("#Cubilose").find("option:selected").attr("data-num")) {//bug:可以通过配送相同物品绕过验证，----请管理员自觉遵守
+                    $("#myPopup_add").html("<p>" + $("#Cubilose").find("option:selected").text() + "剩余数目不足！</p>");
+                    $("#popup_add").click();
+                    return false;
+                }
+                var GP = $("#Cubilose").find("input").eq(1).val();
+                $.each($("#NewCubilose").find("option:selected"), function (i) {
+                    if ($(this).parent().parent().parent().next().next().find("input").val() - $(this).attr("data-num") > 0) {
+                        $("#myPopup_add").html("<p>" + $(this).text() + "剩余数目不足！</p>");
+                        $("#popup_add").click();
+                        return false;
+                    }
+                    cubilose += "|" + $(this).val();
+                    num += "|" + $(this).parent().parent().parent().next().next().find("input").val();
+                    GP += "|" + $(this).parent().parent().parent().next().next().next().next().find("input").val();
+                });
+                $.post("/api/Customer/AddCustomerDelivery", { customerId: $("#customerId").text(), time: time, type: type,money:money, memo: memo, name: name, phone: phone, address: address, cubilose: cubilose, num: num, GP: GP }, function (rsp) {
+                    if (rsp == "成功") {
+                        $("#myPopup_add").html("<p>添加成功！</p>");
+                        $("#popup_add").click();
+                        setTimeout('location.href = "../Customer/CustomerCubilose.html"', 1200);
+                    } else {
+                        $("#myPopup_add").html("<p>添加失败,请重试！</p>");
+                        $("#popup_add").click();
+                    }
+                });
+            });
+
+        });
+
+    </script>
+</head>
+<body>
+    <!--客户列表界面-->
+    <div data-role="page" id="pageCustomerData">
+        <div data-role="header" data-position="fixed">
+            <a href="/home.html" class="ui-btn-left" data-ajax="false" data-icon="arrow-l">首页</a>
+            <h1>客户列表</h1>
+            <a href="#searchPopup" data-rel="popup" data-position-to="window" data-transition="slidedown" class="ui-btn-right" data-icon="search">搜索</a>
+        </div>
+        <div data-role="main" class="ui-content">
+            <ul data-role="listview" id="mList"></ul>
+            <!--搜索对话框-->
+            <div data-role="popup" id="searchPopup">
+                <div data-role="main" class="ui-content">
+                    <input type="search" name="search" id="search" placeholder="搜索内容...">
+                    <input type="button" id="searchButton" value="搜索">
+                </div>
+            </div>
+        </div>
+        <div data-role="footer" style="text-align: center" data-position="fixed">
+            <p>CopyRight &copy;MeetMissCubilose</p>
+        </div>
+    </div>
+
+    <!--客户物品页面-->
+    <div data-role="page" id="pageCuCubilose">
+        <div data-role="header" data-position="fixed" data-add-back-btn="true">
+            <h1>客户物品信息</h1>
+        </div>
+        <div data-role="main" class="ui-content">
+            <ul data-role="listview" id="cubiloseList">
+            </ul>
+        </div>
+        <div data-role="main" class="ui-content">
+            <ul data-role="listview" id="deliveryList"></ul>
+        </div>
+            <span style="display:none" id="customerId"></span>
+        <div data-role="footer" style="text-align: center" data-position="fixed">
+            <p>CopyRight &copy;MeetMissCubilose</p>
+        </div>
+    </div>
+
+    <!--客户物品编辑页面-->
+    <div data-role="page" id="pageCubilose">
+        <div data-role="header" data-position="fixed" data-add-back-btn="true">
+            <h1>编辑客户燕窝</h1>
+        </div>
+        <div data-role="main" class="ui-content">            
+            <div id="CubiloseComponent">
+                <a herf="" style="float:right;"><img src="../../img/tools/plus.png"></a>
+                <label for="component">成分：</label>
+                <select name="component"></select>
+                <label for="num">数目：</label>
+                <input type="number" name="num">
+            </div>
+            <div id="NewCubiloseComponent"></div>
+            <input type="button" id="checkButton" value="提交">
+            <!--提示框-->
+            <a href="#myPopup_check" data-rel="popup" id="popup_check" style="display:none" data-position-to="window"></a>
+            <div data-role="popup" id="myPopup_check"></div>
+        </div>
+        <div data-role="footer" style="text-align: center" data-position="fixed">
+            <p>CopyRight &copy;MeetMissCubilose</p>
+        </div>
+    </div>
+
+    <!--配送页面-->
+    <div data-role="page" id="pageDelivery">
+        <div data-role="header" data-position="fixed" data-add-back-btn="true">
+            <h1>添加配送记录</h1>
+        </div>
+        <div data-role="main" class="ui-content">
+            <label for="time">配送日期：</label>
+            <input type="date" name="time" id="time">
+            <label for="type">配送方式：</label>
+            <input type="text" name="type" id="type">
+            <label for="money">配送费用：</label>
+            <input type="number" name="money" id="money">
+            <label for="name">收货人姓名：</label>
+            <input type="text" name="name" id="name">
+            <label for="phone">收货人电话：</label>
+            <input type="tel" name="phone" id="phone">
+            <label for="address">收货人地址：</label>
+            <input type="text" name="address" id="address" data-clear-btn="true">
+            <div id="Cubilose">
+                <a herf="" style="float:right;"><img src="../../img/tools/plus.png"></a>
+                <label for="cubilose">燕窝：</label>
+                <select name="cubilose"></select>
+                <label for="num">数目：</label>
+                <input type="text" name="num">
+                <label for='GP'>有效日期：</label>
+                <input type='date' name='GP' value=''>
+            </div>
+            <div id="NewCubilose"></div>            
+            <label for="memo">备注：</label>
+            <textarea id="memo"></textarea>
+            <input type="button" id="addButton" value="提交">
+            <!--提示框-->
+            <a href="#myPopup_add" data-rel="popup" id="popup_add" style="display:none" data-position-to="window"></a>
+            <div data-role="popup" id="myPopup_add"></div>   
+        </div>
+        <div data-role="footer" style="text-align: center" data-position="fixed">
+            <p>CopyRight &copy;MeetMissCubilose</p>
+        </div>
+    </div>
+
+    <!--配送详情页面-->
+    <div data-role="page" id="pageDeliveryInfo">
+        <div data-role="header" data-position="fixed" data-add-back-btn="true">
+            <h1>配送记录详情</h1>
+        </div>
+        <div data-role="main" class="ui-content">
+            <ul data-role="listview">
+                <li style="background-color:#F6F6F6"><div><span style="font-weight:bolder">配送日期</span><div style="float:right;width:75%"><span style="float:right;white-space:pre-wrap;font-weight:lighter;" id="tTime"></span></div></div></li>
+                <li style="background-color:#F6F6F6"><div><span style="font-weight:bolder">配送方式</span><div style="float:right;width:75%"><span style="float:right;white-space:pre-wrap;font-weight:lighter;" id="tType"></span></div></div></li>
+                <li style="background-color:#F6F6F6"><div><span style="font-weight:bolder">收件人</span><div style="float:right;width:75%"><span style="float:right;white-space:pre-wrap;font-weight:lighter;" id="tName"></span></div></div></li>
+                <li style="background-color:#F6F6F6"><div><span style="font-weight:bolder">联系电话</span><div style="float:right;width:75%"><span style="float:right;white-space:pre-wrap;font-weight:lighter;" id="tPhone"></span></div></div></li>
+                <li style="background-color:#F6F6F6"><div><span style="font-weight:bolder">收件地址</span><div style="float:right;width:75%"><span style="float:right;white-space:pre-wrap;font-weight:lighter;" id="tAddr"></span></div></div></li>
+                <li style="background-color:#F6F6F6"><div><span style="font-weight:bolder">货物信息</span><div style="float:right;width:75%"><span style="float:right;white-space:pre-wrap;font-weight:lighter;" id="tGoodsInfo"></span></div></div></li>
+                <li style="background-color:#F6F6F6"><div><span style="font-weight:bolder">备注信息</span><div style="float:right;width:75%"><span style="float:right;white-space:pre-wrap;font-weight:lighter;" id="tMemo"></span></div></div></li>
+            </ul>
+        </div>
+        <div data-role="footer" style="text-align: center" data-position="fixed">
+            <p>CopyRight &copy;MeetMissCubilose</p>
+        </div>
+    </div>
+</body>

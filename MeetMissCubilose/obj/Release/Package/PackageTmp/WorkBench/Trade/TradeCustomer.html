@@ -1,0 +1,177 @@
+﻿<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="https://apps.bdimg.com/libs/jquerymobile/1.4.5/jquery.mobile-1.4.5.min.css">
+    <link rel="stylesheet" href="../../themes/skyd.min.css" />
+    <link rel="stylesheet" href="../../themes/jquery.mobile.icons.min.css" />
+    <link rel="stylesheet" href="https://code.jquery.com/mobile/1.4.3/jquery.mobile.structure-1.4.3.min.css" />
+    <script src="https://apps.bdimg.com/libs/jquery/1.10.2/jquery.min.js"></script>
+    <script src="https://apps.bdimg.com/libs/jquerymobile/1.4.5/jquery.mobile-1.4.5.min.js"></script>
+    <title>订单客户</title>
+    <stytle>
+
+    </stytle>
+    <script>
+        $(document).on("pagecreate", "#pageList", function () {
+            if (localStorage.getItem("ManagerID") == undefined || localStorage.getItem("ManagerID") == null) {
+                location.href = "/login.html";
+            }
+            $.get("/api/Trade/GetTradeCustomerList", function (rsp) {
+                var html = "";
+                if (rsp != null && rsp != undefined) {
+                    $.each(rsp, function (i) {
+                        if (rsp[i].productId != undefined || rsp[i].productId != "" || rsp[i].productId != 0) {
+                            html += "<li data-role='list-divider'>订单客户</li>"
+                            html += "<li><a href='#pageTrade' data-id='" + rsp[i].id + "'><h2>" + rsp[i].time + "</h2><p><b>" + rsp[i].customerName + "</b> [" + rsp[i].productName + "]</p></a></li>";
+                        } else {
+                            html += "<li data-role='list-divider'>非订单客户</li>"
+                            html += "<li><a href='#pageTrade' data-id='" + rsp[i].id + "'><h2>" + rsp[i].time + "</h2><p><b>" + rsp[i].customerName + "</b> [" + rsp[i].productName + "]</p></a></li>";
+                        } 
+                    });
+                }
+                $("#mList").html(html).listview('refresh');
+            });
+
+            //绑定点击列表事件
+            $("#mList").on("tap", "a", function () {
+                var id = $(this).attr("data-id");
+                $.get("/api/Trade/GetTrade", { id: id }, function (rsp) {
+                    if (rsp != null && rsp != undefined) {
+                        $("#tid").text(rsp.id);
+                        $("#tcustomerName").text(rsp.customerName);
+                        $("#tproductName").text(rsp.productName);
+                        $("#tpaymentType").text(rsp.paymentType);
+                        $("#tnum").text(rsp.num);
+                        $("#typeDescript").text(rsp.typeDescript);
+                        $("#tinfo").text(rsp.info);
+                        $("#ttime").text(rsp.time);
+                        $("#tmoney").text(rsp.money);
+                        $("#tdiscountMoney").text(rsp.discountMoney);
+                        $("#tdiscountWay").text(rsp.discountWay);
+                        $("#tcustomerId").text(rsp.customerId);
+                        $("#tproductId").text(rsp.productId);
+                        if (rsp.type == 0) {
+                            $("#navbar").show();
+                        } else {
+                            $("#navbar").hide();
+                        }
+                    }
+                });
+            });
+
+            $("#navbar ul li a").on("tap", function () {
+                var tradeId = $("#tid").text();
+                var newType = $(this).attr("data-val");
+                var customerId = $("#tcustomerId").text();
+                var productId = $("#tproductId").text();
+                var num = $("#tnum").text();
+                $.post("/api/Trade/UpdateTradeInfo", { id: tradeId, type: newType, customerId: customerId, productId: productId, num: num }, function (rsp) {
+                    if (rsp == "成功") {
+                        $("#myPopup").html("<p>操作成功！</p>");
+                        $("#popup").click();
+                        setTimeout('location.href = "../Trade/Orders.html"', 1200);
+                    } else {
+                        $("#myPopup").html("<p>操作失败,请重试！</p>");
+                        $("#popup").click();
+                    }
+                });
+            });
+
+            $("#searchButton").on("tap", function () {
+                var search = $("#search").val();
+                var startTime = $("#starTime").val();
+                var endTime = $("#endTime").val();
+                var type = "";
+                $.each($("input[type='checkbox']:checked"), function () {
+                    type += "'" + $(this).val() + "',";
+                });
+                if (type == "") {
+                    $("#mList").html("").listview('refresh');
+                    $("#searchPopup").popup("close");
+                }
+                else {
+                    type = type.substring(0, type.length - 1);
+                    $.get("/api/Trade/GetTradeSearchList", { search: search, startTime: startTime, endTime: endTime, type: type }, function (rsp) {
+                        var html = "";
+                        if (rsp != null && rsp != undefined) {
+                            $.each(rsp, function (i) {
+                                if (rsp[i].type == 0) {
+                                    html += "<li data-role='list-divider'>等待支付</li>"
+                                } else if (rsp[i].type == 1) {
+                                    html += "<li data-role='list-divider'>已支付</li>"
+                                } else {
+                                    html += "<li data-role='list-divider'>已取消</li>"
+                                }
+                                html += "<li><a href='#pageTrade' data-id='" + rsp[i].id + "'><h2>" + rsp[i].time + "</h2><p><b>" + rsp[i].customerName + "</b> [" + rsp[i].productName + "]</p></a></li>";
+                            });
+                        }
+                        $("#mList").html(html).listview('refresh');
+                        $("#searchPopup").popup("close");
+                    });
+                }
+            });
+        });
+    </script>
+</head>
+<body>
+    <!--订单列表页面-->
+    <div data-role="page" id="pageList">
+        <div data-role="header" data-position="fixed">
+            <a href="/home.html" class="ui-btn-left" data-ajax="false" data-icon="arrow-l">首页</a>
+            <h1>订单客户列表</h1>
+            <a href="#searchPopup" data-rel="popup" data-position-to="window" data-transition="slidedown" class="ui-btn-right" data-icon="search">搜索</a>
+        </div>
+        <div data-role="main" class="ui-content">
+            <ul data-role="listview" id="mList"></ul>
+            <!--搜索对话框-->
+            <div data-role="popup" id="searchPopup" class="ui-btn ui-btn-inline ui-corner-all">
+                <div data-role="main" class="ui-content">
+                    <input type="search" name="search" id="search" placeholder="搜索客户...">
+                    <input type='date' name='starTime' id='starTime' value=''>To
+                    <input type='date' name='endTime' id='endTime' value=''>
+                    <label for="orderCustomer">订单客户</label>
+                    <input type="checkbox" id="waitPay" value="0" checked="checked">
+                    <label for="allCustomer">非订单客户</label>
+                    <input type="checkbox" id="areadyPay" value="1">
+                    <input type="button" id="searchButton" value="搜索">
+                </div>
+            </div>
+        </div>
+        <div data-role="footer" style="text-align: center" data-position="fixed">
+            <p>CopyRight &copy;MeetMissCubilose</p>
+        </div>
+    </div>
+
+    <!--订单详情页面-->
+    <div data-role="page" id="pageTrade">
+        <div data-role="header" data-add-back-btn="true" data-position="fixed">
+            <h1>订单详情</h1>
+        </div>
+        <div data-role="main" class="ui-content">
+            <ul data-role="listview">
+                <li style="background-color:#F6F6F6"><div><span style="font-weight:bolder">ID</span><div style="float:right;width:75%"><span style="float:right;white-space:pre-wrap;font-weight:lighter;" id="tid"></span></div></div></li>
+                <li style="background-color:#F6F6F6"><div><span style="font-weight:bolder">订单日期</span><div style="float:right;width:75%"><span style="float:right;white-space:pre-wrap;font-weight:lighter;" id="ttime"></span></div></div></li>
+                <li style="background-color:#F6F6F6"><div><span style="font-weight:bolder">客户名称</span><div style="float:right;width:75%"><span style="float:right;white-space:pre-wrap;font-weight:lighter;" id="tcustomerName"></span></div></div></li>
+                <li style="background-color:#F6F6F6"><div><span style="font-weight:bolder">商品名称</span><div style="float:right;width:75%"><span style="float:right;white-space:pre-wrap;font-weight:lighter;" id="tproductName"></span></div></div></li>
+                <li style="background-color:#F6F6F6"><div><span style="font-weight:bolder">商品数目</span><div style="float:right;width:75%"><span style="float:right;white-space:pre-wrap;font-weight:lighter;" id="tnum"></span></div></div></li>
+                <li style="background-color:#F6F6F6"><div><span style="font-weight:bolder">优惠信息</span><div style="float:right;width:75%"><span style="float:right;white-space:pre-wrap;font-weight:lighter;" id="tdiscountWay"></span></div></div></li>
+                <li style="background-color:#F6F6F6"><div><span style="font-weight:bolder">优惠金额</span><div style="float:right;width:75%"><span style="float:right;white-space:pre-wrap;font-weight:lighter;" id="tdiscountMoney"></span></div></div></li>
+                <li style="background-color:#F6F6F6"><div><span style="font-weight:bolder">成交金额</span><div style="float:right;width:75%"><span style="float:right;white-space:pre-wrap;font-weight:lighter;" id="tmoney"></span></div></div></li>
+                <li style="background-color:#F6F6F6"><div><span style="font-weight:bolder">支付方式</span><div style="float:right;width:75%"><span style="float:right;white-space:pre-wrap;font-weight:lighter;" id="tpaymentType"></span></div></div></li>
+                <li style="background-color:#F6F6F6"><div><span style="font-weight:bolder">支付状态</span><div style="float:right;width:75%"><span style="float:right;white-space:pre-wrap;font-weight:lighter;" id="typeDescript"></span></div></div></li>
+            </ul>
+            <span id="tcustomerId" style="display:none"></span>
+            <span id="tproductId" style="display:none"></span>        
+            <!--结果提示框-->
+            <a href="#myPopup" data-rel="popup" id="popup" style="display:none" data-position-to="window"></a>
+            <div data-role="popup" id="myPopup"></div>    
+        </div>
+        <div data-role="footer" style="text-align: center" data-position="fixed">
+            <div data-role="navbar" style="display:none" id="navbar">
+                <ul>
+                    <li><a href="#" data-val="2">取消支付</a></li>
+                    <li><a href="#" data-val="1">完成支付</a></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</body>

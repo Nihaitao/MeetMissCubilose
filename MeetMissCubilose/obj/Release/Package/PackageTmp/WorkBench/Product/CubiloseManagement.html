@@ -1,0 +1,401 @@
+﻿<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="https://apps.bdimg.com/libs/jquerymobile/1.4.5/jquery.mobile-1.4.5.min.css">
+    <link rel="stylesheet" href="../../themes/skyd.min.css" />
+    <link rel="stylesheet" href="../../themes/jquery.mobile.icons.min.css" />
+    <link rel="stylesheet" href="https://code.jquery.com/mobile/1.4.3/jquery.mobile.structure-1.4.3.min.css" />
+    <script src="https://apps.bdimg.com/libs/jquery/1.10.2/jquery.min.js"></script>
+    <script src="https://apps.bdimg.com/libs/jquerymobile/1.4.5/jquery.mobile-1.4.5.min.js"></script>
+    <title>燕窝信息</title>
+    <stytle>
+
+    </stytle>
+    <script>
+        $(document).on("pagecreate", "#pageList", function () {
+            if (localStorage.getItem("ManagerID") == undefined || localStorage.getItem("ManagerID") == null) {
+                location.href = "/login.html";
+            }
+            $.get("/api/Cubilose/GetCubiloseList", function (rsp) {
+                var html = "";
+                if (rsp != null || rsp != undefined) {
+                    $.each(rsp, function (i) {
+                        if (rsp[i].state == 1)
+                        {
+                            html += "<li><span style='display:none;float:right;background-color:#FF0000;color:#ffffff;width:20%;height:43.38px;text-align:center;line-height:43.38px;'>禁 用</span>";
+                            html += "<a href='#pageCubilose' data-id='" + rsp[i].id + "'><img src='" + rsp[i].img + "' class='ui-li-icon'>" + rsp[i].name + "</a></li>";
+                        }
+                        else
+                        {
+                            html += "<li><span style='display:none;float:right;background-color:#00BB00;color:#ffffff;width:20%;height:43.38px;text-align:center;line-height:43.38px;'>启 用</span>";
+                            html += "<a style='color:#ADADAD;' href='#pageCubilose' data-id='" + rsp[i].id + "'><img src='" + rsp[i].img + "' class='ui-li-icon'>" + rsp[i].name + "</a></li>";
+                        }                        
+                    });
+                }
+                $("#mList").html(html).listview('refresh');
+            });
+            //绑定点击列表事件
+            $("#mList").on("tap", "a", function () {
+                var id = $(this).attr("data-id");
+                $.get("/api/Cubilose/GetCubilose", { id: id }, function (rsp) {
+                    if (rsp != null || rsp != undefined) {
+                        $("#tid").text(rsp.id);
+                        $("#tname").text(rsp.name);
+                        $("#type_hidden").text(rsp.type);
+                        $("#origin_hidden").text(rsp.origin);
+                        if (rsp.type == 2) {
+                            $("#ttype").text(rsp.typeDescript + "-" + rsp.origin);
+                        }
+                        else {
+                            $("#ttype").text(rsp.typeDescript);
+                        }
+                        $("#tinfo").text(rsp.info);
+                        $("#teffect").text(rsp.effect);
+                        $("#tmemo").text(rsp.memo);
+                        $("#timg").attr("src", rsp.img).attr("width", "100%");
+                    }
+                });
+            });
+            //绑定向左滑动列表事件
+            $("#mList").on("swipeleft", "a", function () {
+                $(this).siblings("span").show();
+            });
+            //绑定向右滑动列表事件
+            $("#mList").on("swiperight", "a", function () {
+                $(this).siblings("span").hide();
+            });
+            //绑定点击更改状态事件
+            $("#mList").on("tap", "span", function () {
+                var id = $(this).siblings("a").attr("data-id");
+                var state = $(this).text() == "禁 用" ? 0 : 1;
+                $.post("/api/Cubilose/DeleteCubilose", { id: id, state: state }, function (rsp) {
+                    if (rsp == "成功") {
+                        $("#deletePopup").html("<p>操作成功！</p>");
+                        $("#popup_delete").click();
+                        setTimeout('location.href = "../Product/CubiloseManagement.html"', 1200);
+                    } else {
+                        $("#deletePopup").html("<p>操作失败，请重试！</p>");
+                        $("#popup_delete").click();
+                    }
+                });
+            });
+
+            //绑定搜索按钮
+            $("#searchButton").on("tap", function () {
+                var name = $("#search").val();
+                $.get("/api/Cubilose/GetSearchCubiloseList", { name: name }, function (rsp) {
+                    var html = "";
+                    if (rsp != null || rsp != undefined) {
+                        $.each(rsp, function (i) {
+                            if (rsp[i].state == 1) {
+                                html += "<li><span style='display:none;float:right;background-color:#FF0000;color:#ffffff;width:20%;height:43.38px;text-align:center;line-height:43.38px;'>禁 用</span>";
+                                html += "<a href='#pageCubilose' data-id='" + rsp[i].id + "'>" + rsp[i].name + "</a></li>";
+                            }
+                            else {
+                                html += "<li><span style='display:none;float:right;background-color:#00BB00;color:#ffffff;width:20%;height:43.38px;text-align:center;line-height:43.38px;'>启 用</span>";
+                                html += "<a style='color:#ADADAD;' href='#pageCubilose' data-id='" + rsp[i].id + "'>" + rsp[i].name + "</a></li>";
+                            }
+                        });
+                    }
+                    $("#mList").html(html).listview('refresh');
+                });
+                $("#searchPopup").popup("close");
+            });
+        });
+
+        $(document).on("pagecreate", "#pageAdd", function () {
+            //绑定添加提交按钮
+            $("#addButton").on("click", function () {
+                var name = $("#fullname").val();
+                if (name == "") {
+                    $("#myPopup_add").html("<p>名称不能为空！</p>");
+                    $("#popup_add").click();
+                    setTimeout('$("#myPopup_add").popup("close")', 1000);
+                    return false;
+                }
+                var type = $("#type option:selected").val();
+                var origin = type == 1 ? "" : $("#origin").val();
+                var effect = $("#effect").val();
+                var info = $("#info").val();
+                var memo = $("#memo").val();
+                var img = $("#imgUrl").text();
+                $.post("/api/Cubilose/AddCubilose", { name: name, type: type, origin: origin, effect: effect, info: info, memo: memo, img: img }, function (rsp) {
+                    if (rsp == "成功") {
+                        $("#myPopup_add").html("<p>添加成功！</p>");
+                        $("#popup_add").click();
+                        setTimeout('location.href = "../Product/CubiloseManagement.html"', 1200);
+                    } else {
+                        $("#myPopup_add").html("<p>添加失败,请重试！</p>");
+                        $("#popup_add").click();
+                    }
+                });
+            });
+
+            //绑定下拉单更改事件
+            $("#type").on("change", function () {
+                if ($("#type option:selected").val() == 2) {
+                    $("#hide_origin").show();
+                } else {
+                    $("#hide_origin").hide();
+                }
+            });
+
+            //图片上传
+            $("#img").on("change", function () {
+                if ($("#img")[0].files[0] == undefined || $("#img")[0].files[0] == "" || $("#img")[0].files[0] == null)
+                    return false;
+                var formData = new FormData();
+                formData.append("file", $("#img")[0].files[0]);
+                formData.append("type", "cubilose");
+                $.ajax({
+                    url: "/api/Product/UploadImages",
+                    type: 'POST',
+                    data: formData,
+                    // 告诉jQuery不要去处理发送的数据
+                    processData: false,
+                    // 告诉jQuery不要去设置Content-Type请求头
+                    contentType: false,
+                    beforeSend: function () {
+                        $("#myPopup_add").html("<p>正在上传，请等待！</p>");
+                        $("#popup_add").click();
+                    },
+                    success: function (responseStr) {
+                        $("#imgUrl").text("../../Upload" + responseStr);
+                        $("#myPopup_add").html("<p>上传成功！</p>");
+                        $("#popup_add").click();
+                        setTimeout('$("#myPopup_add").popup("close")',1000);
+                    },
+                    error: function (responseStr) {
+                        $("#myPopup_add").html("<p>" + responseStr + "</p>");
+                        $("#popup_add").click();
+                    }
+                });
+            });
+        });
+
+        $(document).on("pagecreate", "#pageUpdate", function () {
+            //绑定修改提交按钮
+            $("#updateButton").on("click", function () {
+                var id = $("#edit_id").text();
+                var name = $("#edit_name").val();
+                if (name == "") {
+                    $("#myPopup_edit").html("<p>名称不能为空！</p>");
+                    $("#popup_edit").click();
+                    setTimeout('$("#myPopup_edit").popup("close")', 1000);
+                    return false;
+                }
+                var type = $("#edit_type option:selected").val();
+                var origin = type == 1 ? "" : $("#edit_origin").val();
+                var effect = $("#edit_effect").val();
+                var info = $("#edit_info").val();
+                var memo = $("#edit_memo").val();
+                var img = $("#edit_imgUrl").attr("src");
+                $.post("/api/Cubilose/UpdateCubilose", { id: id, name: name, type: type, origin: origin, effect: effect, info: info, memo: memo, img: img }, function (rsp) {
+                    if (rsp == "成功") {
+                        $("#myPopup_edit").html("<p>修改成功！</p>");
+                        $("#popup_edit").click();
+                        setTimeout('location.href = "../Product/CubiloseManagement.html"', 1200);
+                    } else {
+                        $("#myPopup_edit").html("<p>修改失败,请重试！</p>");
+                        $("#popup_edit").click();
+                    }
+                });
+            });
+
+            //绑定下拉单更改事件
+            $("#edit_type").on("change", function () {
+                if ($("#edit_type option:selected").val() == 2) {
+                    $("#edit_hide_origin").show();
+                } else {
+                    $("#edit_hide_origin").hide();
+                }
+            });
+
+            //图片上传
+            $("#edit_img").on("change", function () {
+                if ($("#edit_img")[0].files[0] == undefined || $("#edit_img")[0].files[0] == "" || $("#edit_img")[0].files[0] == null)
+                    return false;
+                var formData = new FormData();
+                formData.append("file", $("#edit_img")[0].files[0]);
+                formData.append("type", "cubilose");
+                $.ajax({
+                    url: "/api/Product/UploadImages",
+                    type: 'POST',
+                    data: formData,
+                    // 告诉jQuery不要去处理发送的数据
+                    processData: false,
+                    // 告诉jQuery不要去设置Content-Type请求头
+                    contentType: false,
+                    beforeSend: function () {
+                        $("#myPopup_edit").html("<p>正在上传，请等待！</p>");
+                        $("#popup_edit").click();
+                    },
+                    success: function (responseStr) {
+                        $("#edit_imgUrl").attr("src", "../../Upload" + responseStr);
+                        $("#myPopup_edit").html("<p>上传成功！</p>");
+                        $("#popup_edit").click();
+                        setTimeout('$("#myPopup_edit").popup("close")', 1000);
+                    },
+                    error: function (responseStr) {
+                        $("#myPopup_edit").html("<p>" + responseStr + "</p>");
+                        $("#popup_edit").click();
+                    }
+                });
+            });
+        });
+
+        $(document).on("pagebeforeshow", "#pageUpdate", function () {
+            var id = $("#tid").text();
+            var name = $("#tname").text();
+            var type = $("#type_hidden").text();
+            var info = $("#tinfo").text();
+            var effect = $("#teffect").text();
+            var origin = $("#origin_hidden").text();
+            var memo = $("#tmemo").text();
+            var imgUrl = $("#timg").attr("src");
+            $("#edit_id").text(id);
+            $("#edit_name").val(name);
+            $("#edit_type").val(type).selectmenu('refresh');
+            if (type == 2) {
+                $("#edit_origin").val(origin);
+                $("#edit_hide_origin").show();
+            } else {
+                $("#edit_origin").val("");
+                $("#edit_hide_origin").hide();
+            }
+            $("#edit_info").val(info);
+            $("#edit_effect").val(effect);
+            $("#edit_memo").val(memo);
+            $("#edit_imgUrl").attr("src", imgUrl).attr("width", "100%");
+        });
+
+    </script>
+</head>
+<body>
+    <!--燕窝列表页面-->
+    <div data-role="page" id="pageList">
+        <div data-role="header" data-position="fixed">
+            <h1>享燕遇</h1>
+            <div data-role="navbar">
+                <ul>
+                    <li><a href="#pageAdd" data-icon="plus">添加</a></li>
+                    <li><a href="../../home.html#menuList" data-icon="home" data-ajax="false">管理中心</a></li>
+                    <li><a href="#searchPopup" data-rel="popup" data-position-to="window" data-transition="slidedown" data-icon="search">搜索</a></li>
+                </ul>
+            </div>
+        </div>
+        <div data-role="main" class="ui-content">
+            <ul data-role="listview" id="mList"></ul>
+            <!--禁用/启用提示框-->
+            <a href="#deletePopup" data-rel="popup" id="popup_delete" style="display:none" data-position-to="window"></a>
+            <div data-role="popup" id="deletePopup"></div>
+            <!--搜索对话框-->
+            <div data-role="popup" id="searchPopup">
+                <div data-role="main" class="ui-content">
+                    <input type="search" name="search" id="search" placeholder="搜索内容...">
+                    <input type="button" id="searchButton" value="搜索">
+                </div>
+            </div> 
+        </div>
+        <div data-role="footer" style="text-align: center" data-position="fixed">
+            <p>CopyRight &copy;MeetMissCubilose</p>
+        </div>
+    </div>
+
+    <!--燕窝详情页面-->
+    <div data-role="page" id="pageCubilose">
+        <div data-role="header" data-add-back-btn="true">
+            <h1>燕窝信息</h1><a href="#pageUpdate" class="ui-btn-right" data-icon="tag">编辑</a>
+        </div>
+        <div data-role="main" class="ui-content">
+            <img id="timg" src=""></br></br>
+            <ul data-role="listview">
+                <li style="background-color:#F6F6F6"><div><span style="font-weight:bolder">ID</span><div style="float:right;width:75%"><span style="float:right;white-space:pre-wrap;font-weight:lighter;" id="tid"></span></div></div></li>
+                <li style="background-color:#F6F6F6"><div><span style="font-weight:bolder">名称</span><div style="float:right;width:75%"><span style="float:right;white-space:pre-wrap;font-weight:lighter;" id="tname"></span></div></div></li>
+                <li style="background-color:#F6F6F6"><div><span style="font-weight:bolder">类别</span><div style="float:right;width:75%"><span style="float:right;white-space:pre-wrap;font-weight:lighter;" id="ttype"></span></div></div></li>
+                <li style="background-color:#F6F6F6"><div><span style="font-weight:bolder">详细信息</span><div style="float:right;width:75%"><span style="float:right;white-space:pre-wrap;font-weight:lighter;" id="tinfo"></span></div></div></li>
+                <li style="background-color:#F6F6F6"><div><span style="font-weight:bolder">功效</span><div style="float:right;width:75%"><span style="float:right;white-space:pre-wrap;font-weight:lighter;" id="teffect"></span></div></div></li>
+                <li style="background-color:#F6F6F6"><div><span style="font-weight:bolder">备注</span><div style="float:right;width:75%"><span style="float:right;white-space:pre-wrap;font-weight:lighter;" id="tmemo"></span></div></div></li>
+            </ul>
+            <span id="type_hidden" style="display:none"></span>
+            <span id="origin_hidden" style="display:none"></span>
+        </div>
+        <div data-role="footer" style="text-align: center" data-position="fixed">
+            <p>CopyRight &copy;MeetMissCubilose</p>
+        </div>
+    </div>
+
+    <!--新增燕窝页面-->
+    <div data-role="page" id="pageAdd">
+        <div data-role="header" data-position="fixed" data-add-back-btn="true">
+            <h1>新增燕窝</h1>
+        </div>
+        <div data-role="main" class="ui-content">
+            <label for="fullname">名称：</label>
+            <input type="text" name="fullname" id="fullname">
+            <label for="type">类别：</label>
+            <select name="type" id="type" data-native-menu="false">
+                <option value="1">鲜炖</option>
+                <option value="2">干货</option>
+            </select>
+            <div id="hide_origin" style="display:none">
+                <label for="origin">产地：</label>
+                <input type="text" name="origin" id="origin">
+            </div>
+            <label for="effect">功效：</label>
+            <input type="text" name="effect" id="effect">
+            <label for="info">详细信息：</label>
+            <textarea id="info"></textarea>
+            <label for="memo">备注：</label>
+            <textarea id="memo"></textarea>
+            <label for="img">图片：</label>
+            <input type="file" accept="image/*;capture=camera" id="img">
+            <input type="button" id="addButton" value="提交">
+            <span id="imgUrl" style="display:none"></span>
+            <!--提示框-->
+            <a href="#myPopup_add" data-rel="popup" id="popup_add" style="display:none" data-position-to="window"></a>
+            <div data-role="popup" id="myPopup_add"></div>
+        </div>
+        <div data-role="footer" style="text-align: center" data-position="fixed">
+            <p>CopyRight &copy;MeetMissCubilose</p>
+        </div>
+    </div>   
+    
+    <!--修改燕窝页面-->
+    <div data-role="page" id="pageUpdate">
+        <div data-role="header" data-position="fixed" data-add-back-btn="true">
+            <h1>修改燕窝</h1>
+        </div>
+        <div data-role="main" class="ui-content">
+            <label for="edit_id">ID：</label>
+            <span id="edit_id"></span>
+            <label for="edit_name">名称：</label>
+            <input type="text" name="edit_name" id="edit_name">
+            <label for="edit_type">类别：</label>
+            <select name="edit_type" id="edit_type" data-native-menu="false">
+                <option value="1">鲜炖</option>
+                <option value="2">干货</option>
+            </select>
+            <div id="edit_hide_origin">
+                <label for="edit_origin">产地：</label>
+                <input type="text" name="edit_origin" id="edit_origin">
+            </div>
+            <label for="edit_effect">功效：</label>
+            <input type="text" name="edit_effect" id="edit_effect">
+            <label for="edit_info">详细信息：</label>
+            <textarea id="edit_info"></textarea>
+            <label for="edit_memo">备注：</label>
+            <textarea id="edit_memo"></textarea>
+            <label for="edit_imgUrl">图片：</label>
+            <img id="edit_imgUrl" src=""></br>
+            <input type="file" accept="image/*;capture=camera" id="edit_img">
+            <input type="button" id="updateButton" value="提交">
+            <!--提示框-->
+            <a href="#myPopup_edit" data-rel="popup" id="popup_edit" style="display:none" data-position-to="window"></a>
+            <div data-role="popup" id="myPopup_edit"></div>
+        </div>
+        <div data-role="footer" style="text-align: center" data-position="fixed">
+            <p>CopyRight &copy;MeetMissCubilose</p>
+        </div>
+    </div>
+
+</body>

@@ -1,0 +1,162 @@
+﻿<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="https://apps.bdimg.com/libs/jquerymobile/1.4.5/jquery.mobile-1.4.5.min.css">
+    <link rel="stylesheet" href="../../themes/skyd.min.css" />
+    <link rel="stylesheet" href="../../themes/jquery.mobile.icons.min.css" />
+    <link rel="stylesheet" href="https://code.jquery.com/mobile/1.4.3/jquery.mobile.structure-1.4.3.min.css" />
+    <script src="https://apps.bdimg.com/libs/jquery/1.10.2/jquery.min.js"></script>
+    <script src="https://apps.bdimg.com/libs/jquerymobile/1.4.5/jquery.mobile-1.4.5.min.js"></script>
+    <title>账务信息</title>
+    <stytle>
+
+    </stytle>
+    <script>
+        $(document).on("pagecreate", "#pageList", function () {
+            if (localStorage.getItem("ManagerID") == undefined || localStorage.getItem("ManagerID") == null) {
+                location.href = "/login.html";
+            }
+            var year = new Date().getFullYear();
+            var month = new Date().getMonth() + 1;
+            month = month.Length == 2 ? month : "0" + month;
+            $("#time").text(year + "-" + month);
+            $.get("/api/Account/GetAccountList", { year: year, month: month }, function (rsp) {
+                if (rsp != null && rsp != undefined) {
+                    if (rsp[0].money != null && rsp[0].money != "" && rsp[0].money != undefined)
+                        $("#revenue").text(rsp[0].money);
+                    else
+                        $("#revenue").text(0);
+                    if (rsp[1].money != null && rsp[1].money != "" && rsp[1].money != undefined)
+                        $("#purchaseOut").text(rsp[1].money);
+                    else
+                        $("#purchaseOut").text(0);
+                    if (rsp[2].money != null && rsp[2].money != "" && rsp[2].money != undefined)
+                        $("#deliveryOut").text(rsp[2].money);
+                    else
+                        $("#deliveryOut").text(0);
+                }
+            });
+
+            //绑定搜索按钮
+            $("#searchButton").on("tap", function () {
+                var time = $("#search").val();
+                $("#time").text(time);
+                $.get("/api/Account/GetAccountList", { year: time.split("-")[0], month: time.split("-")[1] }, function (rsp) {
+                    if (rsp != null && rsp != undefined) {
+                        if (rsp[0].money != null && rsp[0].money != "" && rsp[0].money != undefined)
+                            $("#revenue").text(rsp[0].money);
+                        else
+                            $("#revenue").text(0);
+                        if (rsp[1].money != null && rsp[1].money != "" && rsp[1].money != undefined)
+                            $("#purchaseOut").text(rsp[1].money);
+                        else
+                            $("#purchaseOut").text(0);
+                        if (rsp[2].money != null && rsp[2].money != "" && rsp[2].money != undefined)
+                            $("#deliveryOut").text(rsp[2].money);
+                        else
+                            $("#deliveryOut").text(0);
+                    }
+                });
+                $("#searchPopup").popup("close");
+            });
+            $("#mList a").on("tap", function () {
+                var date = $("#time").text();
+                var index = $(this).attr("data-id");
+                var html = "";
+                if (index == 1) {
+                    $.get("/api/Account/GetRevenueList", { year: date.split("-")[0], month: date.split("-")[1] }, function (rsp) {
+                        if (rsp != null && rsp != undefined && rsp != "") {
+                            $.each(rsp, function (i) {
+                                html += "<li data-icon='false'><a href='#'><h2>" + rsp[i].time + "</h2><span style='float:right'>￥：" + rsp[i].money + "</span><h3>" + rsp[i].name + "</h3></a></li>";
+                            });
+                        }
+                        $("#revenueList").html(html).listview('refresh');
+                    });
+                } else if (index == 2) {
+                    $.get("/api/Account/GetPurchaseOutList", { year: date.split("-")[0], month: date.split("-")[1] }, function (rsp) {
+                        if (rsp != null && rsp != undefined && rsp != "") {
+                            $.each(rsp, function (i) {
+                                html += "<li data-icon='false'><a href='#'><h2>" + rsp[i].time + "</h2><span style='float:right'>￥：" + rsp[i].money + "</span><h3>" + rsp[i].name + "</h3></a></li>";
+                            });
+                        }
+                        $("#purchaseOutList").html(html).listview('refresh');
+                    });
+                }else if(index == 3){
+                    $.get("/api/Account/GetDeliveryOutList", { year: date.split("-")[0], month: date.split("-")[1] }, function (rsp) {
+                        if (rsp != null && rsp != undefined && rsp != "") {
+                            $.each(rsp, function (i) {
+                                html += "<li data-icon='false'><a href='#'><h2>" + rsp[i].time + "</h2><span style='float:right'>￥：" + rsp[i].money + "</span><h3>" + rsp[i].name + "</h3></a></li>";
+                            });
+                        }
+                        $("#deliveryOutList").html(html).listview('refresh');
+                    });
+                }
+            });
+        });
+    </script>
+</head>
+<body>
+    <!--管理员列表界面-->
+    <div data-role="page" id="pageList">
+        <div data-role="header" data-position="fixed">
+            <a href="/home.html" class="ui-btn-left" data-ajax="false" data-icon="arrow-l">首页</a>
+            <h1><span id="time"></span>账务报表</h1>
+            <a href="#searchPopup" data-rel="popup" data-position-to="window" data-transition="slidedown" class="ui-btn-right" data-icon="search">搜索</a>
+        </div>
+        <div data-role="main" class="ui-content">
+            <ul data-role="listview" id="mList">
+                <li data-role='list-divider'>进账</li>
+                <li><a href='#pageRevenue' data-id="1"><span style="float:right" id="revenue">0</span>销售入账</a></li>
+                <li data-role='list-divider'>支出</li>
+                <li><a href='#pagePurchaseOut' data-id="2"><span style="float:right" id="purchaseOut">0</span>采购支出</a></li>
+                <li><a href='#pageDeliveryOut' data-id="3"><span style="float:right" id="deliveryOut">0</span>配送支出</a></li>
+            </ul>
+            <!--搜索对话框-->
+            <div data-role="popup" id="searchPopup">
+                <div data-role="main" class="ui-content">
+                    <input type="month" name="search" id="search" >
+                    <input type="button" id="searchButton" value="搜索">
+                </div>
+            </div>
+        </div>
+        <div data-role="footer" style="text-align: center" data-position="fixed">
+            <p>CopyRight &copy;MeetMissCubilose</p>
+        </div>
+    </div>
+
+    <!--销售入账详细界面-->
+    <div data-role="page" id="pageRevenue">
+        <div data-role="header" data-add-back-btn="true" data-position="fixed">
+            <h1>销售入账</h1>
+        </div>
+        <div data-role="main" class="ui-content">
+            <ul data-role="listview" id="revenueList"></ul>
+        </div>
+        <div data-role="footer" style="text-align: center" data-position="fixed">
+            <p>CopyRight &copy;MeetMissCubilose</p>
+        </div>
+    </div>
+    <!--采购支出详细界面-->
+    <div data-role="page" id="pagePurchaseOut">
+        <div data-role="header" data-add-back-btn="true" data-position="fixed">
+            <h1>采购支出</h1>
+        </div>
+        <div data-role="main" class="ui-content">
+            <ul data-role="listview" id="purchaseOutList"></ul>
+        </div>
+        <div data-role="footer" style="text-align: center" data-position="fixed">
+            <p>CopyRight &copy;MeetMissCubilose</p>
+        </div>
+    </div>    
+    <!--配送支出详细界面-->
+    <div data-role="page" id="pageDeliveryOut">
+        <div data-role="header" data-add-back-btn="true" data-position="fixed">
+            <h1>配送支出</h1>
+        </div>
+        <div data-role="main" class="ui-content">
+            <ul data-role="listview" id="deliveryOutList"></ul>
+        </div>
+        <div data-role="footer" style="text-align: center" data-position="fixed">
+            <p>CopyRight &copy;MeetMissCubilose</p>
+        </div>
+    </div>
+</body>

@@ -1,0 +1,408 @@
+﻿<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="https://apps.bdimg.com/libs/jquerymobile/1.4.5/jquery.mobile-1.4.5.min.css">
+    <link rel="stylesheet" href="../../themes/skyd.min.css" />
+    <link rel="stylesheet" href="../../themes/jquery.mobile.icons.min.css" />
+    <link rel="stylesheet" href="https://code.jquery.com/mobile/1.4.3/jquery.mobile.structure-1.4.3.min.css" />
+    <script src="https://apps.bdimg.com/libs/jquery/1.10.2/jquery.min.js"></script>
+    <script src="https://apps.bdimg.com/libs/jquerymobile/1.4.5/jquery.mobile-1.4.5.min.js"></script>
+    <title>客户信息</title>
+
+    <script>
+        $(document).on("pagecreate", "#pageList", function () {
+            if (localStorage.getItem("ManagerID") == undefined || localStorage.getItem("ManagerID") == null) {
+                location.href = "/login.html";
+            }
+            $.get("/api/Customer/GetCustomerList", function (rsp) {
+                var html = "";
+                if (rsp != null || rsp != undefined) {
+                    $.each(rsp, function (i) {
+                        html += "<li><a href='#pageCustomer' data-id='" + rsp[i].id + "'><img src='" + rsp[i].headimgurl + "' class='ui-li-icon'>" + rsp[i].name + "</a></li>";
+                    });
+                }
+                $("#mList").html(html).listview('refresh');
+            });
+
+            //绑定点击事件
+            $("#mList").on("tap", "a", function () {
+                var id = $(this).attr("data-id");
+                $.get("/api/Customer/GetCustomer", { id: id }, function (rsp) {
+                    if (rsp != null || rsp != undefined) {
+                        $("#tid").text(rsp.id);
+                        $("#tname").text(rsp.name);
+                        $("#tsex").text(rsp.sex);
+                        $("#tbirthday").text(rsp.birthday + "(" + rsp.bdtype + ")");
+                        $("#tbdType").text(rsp.bdtype);
+                        $("#tphone").text(rsp.phone);
+                        $("#taddr").text(rsp.addr);
+                        $("#tlevel").text(rsp.level);
+                        $("#tcredit").text(rsp.credit);
+                        $("#tstate").text(rsp.stateDescribe);
+                        $("#tmarkday").text(rsp.markDay);
+                        $("#tsource").text(rsp.sourceDescribe);
+                        $("#source_hidden").text(rsp.source);
+                        $("#tmanager").text(rsp.managerName);
+                        $("#tmemo").text(rsp.memo);
+                    }
+                });
+            });
+
+            //绑定搜索按钮
+            $("#searchButton").on("tap", function () {
+                var name = $("#search").val();
+                $.get("/api/Customer/GetSearchCustomerList", { name: name }, function (rsp) {
+                    var html = "";
+                    if (rsp != null || rsp != undefined) {
+                        $.each(rsp, function (i) {
+                            html += "<li><a href='#pageCustomer' data-id='" + rsp[i].id + "'><img src='" + rsp[i].headimgurl + "' class='ui-li-icon'>" + rsp[i].name + "</a></li>";
+                        });
+                    }
+                    $("#mList").html(html).listview('refresh');
+                });
+                $("#searchPopup").popup("close");
+            });
+        });
+
+        $(document).on("pagecreate", "#pageAdd", function () {
+            //初始化客户来源下拉列表
+            $.get("/api/Source/GetSourceList", function (rsp) {
+                var html = "";
+                if (rsp != null || rsp != undefined) {
+                    $.each(rsp, function (i) {
+                        html += "<option value='" + rsp[i].source_id + "'>" + rsp[i].source_name + "</option>";
+                    });
+                }
+                $("#source").html(html).selectmenu("refresh");
+            });
+            //初始化录入人信息
+            $("#manager").html("<option selected value='" + localStorage.getItem("ManagerID") + "'>" + localStorage.getItem("ManagerName") + "</option>").selectmenu("refresh");
+            
+            //绑定添加提交按钮
+            $("#addButton").on("click", function () {
+                var name = $("#fname").val();
+                if (name == "") {
+                    $("#myPopup_add").html("<p>名称不能为空！</p>");
+                    $("#popup_add").click();
+                    setTimeout('$("#myPopup_add").popup("close")', 1000);
+                    return false;
+                }
+                var sex = $("#sex option:selected").val();
+                var bday = $("#bday").val();
+                var bdType = $("#bdType option:selected").val();
+                var phone = $("#phone").val();
+                var addr = $("#addr").val();
+                var level = $("#level option:selected").val();
+                var source = $("#source option:selected").val();
+                var manager = $("#manager option:selected").val();
+                var state = $("#state option:selected").val();
+                var markday = $("#markday").val();
+                var memo = $("#memo").val();
+                $.post("/api/Customer/AddCustomer", { name: name, sex: sex, bday: bday, bdType: bdType, phone: phone, addr: addr, level: level, source: source, manager: manager, state: state, markday: markday, memo: memo }, function (rsp) {
+                    if (rsp == "成功") {
+                        $("#myPopup_add").html("<p>添加成功！</p>");
+                        $("#popup_add").click();
+                        setTimeout('location.href = "../Customer/CustomerManagement.html"', 1200);
+                    } else {
+                        $("#myPopup_add").html("<p>添加失败,请重试！</p>");
+                        $("#popup_add").click();
+                    }
+                });
+            });
+            //绑定state下拉单更改事件
+            $("#state").on("change", function () {
+                var day = new Date().format("yyyy-MM-dd");
+                if ($("#state option:selected").val() == 1) {
+                    $("#mark_day").show();
+                    $("#markday").val(day);
+                }
+                else {
+                    $("#mark_day").hide();
+                    $("#markday").val("");
+                }
+            });
+        });       
+
+        $(document).on("pagecreate", "#pageUpdate", function () {            
+            //绑定修改提交按钮
+            $("#updateButton").on("click", function () {
+                var id = $("#idEdit").text();
+                var name = $("#nameEdit").val();
+                if (name == "") {
+                    $("#myPopup_edit").html("<p>名称不能为空！</p>");
+                    $("#popup_edit").click();
+                    setTimeout('$("#myPopup_edit").popup("close")', 1000);
+                    return false;
+                }
+                var sex = $("#sexEdit option:selected").val();
+                var bday = $("#bdayEdit").val();
+                var bdType = $("#bdTypeEdit option:selected").val();
+                var phone = $("#phoneEdit").val();
+                var addr = $("#addrEdit").val();
+                var level = $("#levelEdit option:selected").val();
+                var source = $("#sourceEdit option:selected").val();
+                var manager = $("#managerEdit option:selected").val();
+                var state = $("#stateEdit option:selected").val();
+                var markday = $("#markdayEdit").val();
+                var memo = $("#memoEdit").val();
+                $.post("/api/Customer/UpdateCustomer", { id:id, name: name, sex: sex, bday: bday, bdType: bdType, phone: phone, addr: addr, level: level, source: source, manager: manager, state: state, markday: markday, memo: memo }, function (rsp) {
+                    if (rsp == "成功") {
+                        $("#myPopup_edit").html("<p>修改成功！</p>");
+                        $("#popup_edit").click();
+                        setTimeout('location.href = "../Customer/CustomerManagement.html"', 1200);
+                    } else {
+                        $("#myPopup_edit").html("<p>修改失败,请重试！</p>");
+                        $("#popup_edit").click();
+                    }
+                });
+            });
+            //绑定state下拉单更改事件
+            $("#stateEdit").on("change", function () {
+                var day = new Date().format("yyyy-MM-dd");
+                if ($("#stateEdit option:selected").val() == 1) {
+                    $("#mark_dayEdit").show();
+                    $("#markdayEdit").val(day);
+                }
+                else {
+                    $("#mark_dayEdit").hide();
+                    $("#markdayEdit").val("");
+                }
+            });
+        });
+
+        $(document).on("pagebeforeshow", "#pageUpdate", function () {
+            //初始化客户来源下拉列表
+            $.get("/api/Source/GetSourceList", function (rsp) {
+                var html = "";
+                if (rsp != null || rsp != undefined) {
+                    $.each(rsp, function (i) {
+                        if ($("#source_hidden").text() == rsp[i].source_id)
+                            html += "<option value='" + rsp[i].source_id + "' selected='selected'>" + rsp[i].source_name + "</option>";
+                        else
+                            html += "<option value='" + rsp[i].source_id + "'>" + rsp[i].source_name + "</option>";
+                    });
+                }
+                $("#sourceEdit").html(html).selectmenu("refresh");
+            });
+            //绑定数据
+            $("#idEdit").text($("#tid").text());
+            $("#nameEdit").val($("#tname").text());
+            var _sex = $("#tsex").text() == "男" ? 1 : $("#tsex").text() == "女" ? 0 : -1;
+            $("#sexEdit").val(_sex).selectmenu('refresh');
+            var t = $("#tbirthday").text();
+            $("#bdayEdit").val(t.substring(0, 10));
+            $("#bdTypeEdit").val($("#tbdType").text());
+            $("#phoneEdit").val($("#tphone").text());
+            $("#addrEdit").val($("#taddr").text());
+            var _state = $("#tstate").text() == "正常" ? 1 : 0;
+            $("#stateEdit").val(_state).selectmenu('refresh');
+            if (_state == 1) {
+                $("#mark_dayEdit").show();
+                var _day = new Date($("#tmarkday").text()).format("yyyy-MM-dd");
+                $("#markdayEdit").val(_day);
+            } else {
+                $("#mark_dayEdit").hide();
+                $("#markdayEdit").val("");
+            }
+            $("#memoEdit").val($("#tmemo").text());
+            $("#levelEdit").val($("#tlevel").text()).selectmenu('refresh');
+            $("#creditEdit").val($("#tcredit").text()).selectmenu('refresh');
+
+            //初始化录入人信息
+            $("#managerEdit").html("<option selected value='" + localStorage.getItem("ManagerID") + "'>" + localStorage.getItem("ManagerName") + "</option>").selectmenu("refresh");
+
+        });
+        //日期格式化
+        Date.prototype.format = function (format) {
+            var o = {
+                "M+": this.getMonth() + 1, //month
+                "d+": this.getDate(),   //day
+                "h+": this.getHours(),  //hour
+                "m+": this.getMinutes(), //minute
+                "s+": this.getSeconds(), //second
+                "q+": Math.floor((this.getMonth() + 3) / 3), //quarter
+                "S": this.getMilliseconds() //millisecond
+            }
+            if (/(y+)/.test(format)) format = format.replace(RegExp.$1,
+            (this.getFullYear() + "").substr(4 - RegExp.$1.length));
+            for (var k in o) if (new RegExp("(" + k + ")").test(format))
+                format = format.replace(RegExp.$1,
+                RegExp.$1.length == 1 ? o[k] :
+                ("00" + o[k]).substr(("" + o[k]).length));
+            return format;
+        }
+    </script>
+</head>
+<body>
+    <!--客户列表界面-->
+    <div data-role="page" id="pageList">
+        <div data-role="header" data-position="fixed">
+            <h1 role="heading">客户信息</h1>
+            <div data-role="navbar">
+                <ul>
+                    <li><a href="#pageAdd" data-icon="plus">添加</a></li>
+                    <li><a href="../../home.html#menuList" data-icon="home" data-ajax="false">管理中心</a></li>
+                    <li><a href="#searchPopup" data-rel="popup" data-position-to="window" data-transition="slidedown" data-icon="search">搜索</a></li>
+                </ul>
+            </div>
+        </div>        
+        <div data-role="main" class="ui-content">
+            <ul data-role="listview" id="mList"></ul>
+            <!--搜索对话框-->            
+            <div data-role="popup" id="searchPopup">
+                <div data-role="main" class="ui-content">
+                    <input type="search" name="search" id="search" placeholder="搜索内容...">
+                    <input type="button" id="searchButton" value="搜索">
+                </div> 
+            </div> 
+        </div>
+        <div data-role="footer" style="text-align: center" data-position="fixed">
+            <p>CopyRight &copy;MeetMissCubilose</p>
+        </div>
+    </div>
+
+    <!--客户详情页面-->
+    <div data-role="page" id="pageCustomer">
+        <div data-role="header" data-add-back-btn="true" data-position="fixed">
+            <h1>产品信息</h1><a href="#pageUpdate" class="ui-btn-right" data-icon="tag">编辑</a>
+        </div>
+        <div data-role="main" class="ui-content">
+            <ul data-role="listview">
+                <li style="background-color:#F6F6F6"><div><span style="font-weight:bolder">ID</span><div style="float:right;width:75%"><span style="float:right;white-space:pre-wrap;font-weight:lighter;" id="tid"></span></div></div></li>
+                <li style="background-color:#F6F6F6"><div><span style="font-weight:bolder">名称</span><div style="float:right;width:75%"><span style="float:right;white-space:pre-wrap;font-weight:lighter;" id="tname"></span></div></div></li>
+                <li style="background-color:#F6F6F6"><div><span style="font-weight:bolder">性别</span><div style="float:right;width:75%"><span style="float:right;white-space:pre-wrap;font-weight:lighter;" id="tsex"></span></div></div></li>
+                <li style="background-color:#F6F6F6"><div><span style="font-weight:bolder">出生日期</span><div style="float:right;width:75%"><span style="float:right;white-space:pre-wrap;font-weight:lighter;" id="tbirthday"></span></div></div></li>
+                <li style="background-color:#F6F6F6"><div><span style="font-weight:bolder">电话</span><div style="float:right;width:75%"><span style="float:right;white-space:pre-wrap;font-weight:lighter;" id="tphone"></span></div></div></li>
+                <li style="background-color:#F6F6F6"><div><span style="font-weight:bolder">地址</span><div style="float:right;width:75%"><span style="float:right;white-space:pre-wrap;font-weight:lighter;" id="taddr"></span></div></div></li>
+                <li style="background-color:#F6F6F6"><div><span style="font-weight:bolder">等级</span><div style="float:right;width:75%"><span style="float:right;white-space:pre-wrap;font-weight:lighter;" id="tlevel"></span></div></div></li>
+                <li style="background-color:#F6F6F6"><div><span style="font-weight:bolder">信用</span><div style="float:right;width:75%"><span style="float:right;white-space:pre-wrap;font-weight:lighter;" id="tcredit"></span></div></div></li>
+                <li style="background-color:#F6F6F6"><div><span style="font-weight:bolder">状态</span><div style="float:right;width:75%"><span style="float:right;white-space:pre-wrap;font-weight:lighter;" id="tstate"></span></div></div></li>
+                <li style="background-color:#F6F6F6"><div><span style="font-weight:bolder">纪念日</span><div style="float:right;width:75%"><span style="float:right;white-space:pre-wrap;font-weight:lighter;" id="tmarkday"></span></div></div></li>
+                <li style="background-color:#F6F6F6"><div><span style="font-weight:bolder">来源</span><div style="float:right;width:75%"><span style="float:right;white-space:pre-wrap;font-weight:lighter;" id="tsource"></span></div></div></li>
+                <li style="background-color:#F6F6F6"><div><span style="font-weight:bolder">录入人</span><div style="float:right;width:75%"><span style="float:right;white-space:pre-wrap;font-weight:lighter;" id="tmanager"></span></div></div></li>
+                <li style="background-color:#F6F6F6"><div><span style="font-weight:bolder">备注</span><div style="float:right;width:75%"><span style="float:right;white-space:pre-wrap;font-weight:lighter;" id="tmemo"></span></div></div></li>
+            </ul>
+            <span id="source_hidden" style="display:none"></span>
+            <span id="tbdType" style="display:none"></span>
+        </div>
+        <div data-role="footer" style="text-align: center" data-position="fixed">
+            <p>CopyRight &copy;MeetMussProduct</p>
+        </div>
+    </div>
+
+    <!--添加客户界面-->
+    <div data-role="page" id="pageAdd">
+        <div data-role="header" data-position="fixed" data-add-back-btn="true">
+            <h1>添加客户</h1>
+        </div>
+        <div data-role="main" class="ui-content">
+            <label for="fname">姓名：</label>
+            <input type="text" name="fname" id="fname" data-clear-btn="true">
+            <label for="sex">性别：</label>
+            <select name="sex" id="sex" data-native-menu="false">
+                <option value="0">女</option>
+                <option value="1">男</option>
+                <option value="-1">未知</option>
+            </select>
+            <label for="bday">出生日期：</label>
+            <input type="date" name="bday" id="bday">
+            <select name="bdType" id="bdType" data-native-menu="false">
+                <option value="1">阳历</option>
+                <option value="0">阴历</option>
+            </select>
+            <label for="phone">手机：</label>
+            <input type="tel" name="phone" id="phone">
+            <label for="add1">地址：</label>
+            <input type="text" name="addr" id="addr" data-clear-btn="true">
+            <label for="level">级别：</label>
+            <select name="level" id="level" data-native-menu="false">
+                <option value="1">0</option>
+                <option value="1">1</option>
+                <option value="2">2</option>
+                <option value="3">3</option>
+                <option value="4">4</option>
+                <option value="5">5</option>
+            </select>
+            <label for="source">来源：</label>
+            <select name="source" id="source" data-native-menu="false"></select>
+            <label for="manager">录入员：</label>
+            <select name="manager" id="manager" disabled="disabled"></select>
+            <label for="state">状态：</label>
+            <select name="state" id="state" data-native-menu="false">
+                <option value="0">潜在</option>
+                <option value="1">正常</option>
+            </select>
+            <div id="mark_day" style="display:none">
+                <label for='markday'>客户纪念日：</label>
+                <input type='date' name='markday' id='markday' value=''>
+            </div>
+            <label for="memo">备注：</label>
+            <textarea id="memo"></textarea>
+            <input type="button" id="addButton" value="提交">
+            <!--提示框-->
+            <a href="#myPopup_add" data-rel="popup" id="popup_add" style="display:none" data-position-to="window"></a>
+            <div data-role="popup" id="myPopup_add"></div>   
+        </div>
+        <div data-role="footer" style="text-align: center" data-position="fixed">
+            <p>CopyRight &copy;MeetMissCubilose</p>
+        </div>
+    </div>
+
+    <!--修改客户界面-->
+    <div data-role="page" id="pageUpdate">
+        <div data-role="header" data-position="fixed" data-add-back-btn="true">
+            <h1>修改客户</h1>
+        </div>
+        <div data-role="main" class="ui-content">
+            <label for="idEdit">ID：</label>
+            <span id="idEdit"></span>
+            <label for="nameEdit">姓名：</label>
+            <input type="text" name="nameEdit" id="nameEdit" data-clear-btn="true">
+            <label for="sexEdit">性别：</label>
+            <select name="sexEdit" id="sexEdit" data-native-menu="false">
+                <option value="0">女</option>
+                <option value="1">男</option>
+                <option value="-1">未知</option>
+            </select>
+            <label for="bdayEdit">出生日期：</label>
+            <input type="date" name="bdayEdit" id="bdayEdit">
+            <select name="bdTypeEdit" id="bdTypeEdit" data-native-menu="false">
+                <option value="1">阳历</option>
+                <option value="0">阴历</option>
+            </select>
+            <label for="phoneEdit">手机：</label>
+            <input type="tel" name="phoneEdit" id="phoneEdit">
+            <label for="addrEdit">地址：</label>
+            <input type="text" name="addrEdit" id="addrEdit" data-clear-btn="true">
+            <label for="levelEdit">级别：</label>
+            <select name="levelEdit" id="levelEdit" data-native-menu="false">
+                <option value="1">1</option>
+                <option value="2">2</option>
+                <option value="3">3</option>
+                <option value="4">4</option>
+                <option value="5">5</option>
+            </select>
+            <label for="sourceEdit">来源：</label>
+            <select name="sourceEdit" id="sourceEdit" data-native-menu="false"></select>
+            <label for="managerEdit">录入员：</label>
+            <select name="managerEdit" id="managerEdit" disabled="disabled"></select>
+            <label for="stateEdit">状态：</label>
+            <select name="stateEdit" id="stateEdit" data-native-menu="false">
+                <option value="0">潜在</option>
+                <option value="1">正常</option>
+            </select>
+            <div id="mark_dayEdit" style="display:none">
+                <label for='markdayEdit'>客户纪念日：</label>
+                <input type='date' name='markdayEdit' id='markdayEdit' value=''>
+            </div>
+            <label for="memoEdit">备注：</label>
+            <textarea id="memoEdit"></textarea>
+            <input type="button" id="updateButton" value="提交">
+            <!--提示框-->
+            <a href="#myPopup_edit" data-rel="popup" id="popup_edit" style="display:none" data-position-to="window"></a>
+            <div data-role="popup" id="myPopup_edit"></div>   
+        </div>
+        <div data-role="footer" style="text-align: center" data-position="fixed">
+            <p>CopyRight &copy;MeetMissCubilose</p>
+        </div>
+    </div>
+</body>

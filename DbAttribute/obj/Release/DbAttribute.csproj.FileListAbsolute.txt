@@ -1,0 +1,5 @@
+C:\新建文件夹\MeetMissCubilose\DbAttribute\bin\Release\DbAttribute.dll
+C:\新建文件夹\MeetMissCubilose\DbAttribute\bin\Release\DbAttribute.pdb
+C:\新建文件夹\MeetMissCubilose\DbAttribute\obj\Release\DbAttribute.csprojResolveAssemblyReference.cache
+C:\新建文件夹\MeetMissCubilose\DbAttribute\obj\Release\DbAttribute.dll
+C:\新建文件夹\MeetMissCubilose\DbAttribute\obj\Release\DbAttribute.pdb

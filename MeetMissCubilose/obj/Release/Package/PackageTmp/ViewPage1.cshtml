@@ -1,0 +1,16 @@
+﻿@{
+    Layout = null;
+}
+
+<script src="~/JS/jquery-1.4.1.js"></script>
+
+<script>
+    $(function () {
+
+        $.get("/api/CourseInfo/GetCourseListInfoOther", { StuDetail_ID: "4865F4F7DFAA4D2BA3AAA656CA9E7F88" }, function (rsp) {
+            $("#content").html(rsp);
+        }, "text");
+    });
+</script>
+
+<div id="content"></div>

@@ -1,0 +1,17 @@
+C:\新建文件夹\MeetMissCubilose\BLL\bin\Release\Wx_BLL.dll
+C:\新建文件夹\MeetMissCubilose\BLL\bin\Release\Wx_BLL.pdb
+C:\新建文件夹\MeetMissCubilose\BLL\bin\Release\Common.dll
+C:\新建文件夹\MeetMissCubilose\BLL\bin\Release\DbAttribute.dll
+C:\新建文件夹\MeetMissCubilose\BLL\bin\Release\Entity.dll
+C:\新建文件夹\MeetMissCubilose\BLL\bin\Release\Newtonsoft.Json.dll
+C:\新建文件夹\MeetMissCubilose\BLL\bin\Release\ViewModel.dll
+C:\新建文件夹\MeetMissCubilose\BLL\bin\Release\Wx_DAL.dll
+C:\新建文件夹\MeetMissCubilose\BLL\bin\Release\Common.pdb
+C:\新建文件夹\MeetMissCubilose\BLL\bin\Release\DbAttribute.pdb
+C:\新建文件夹\MeetMissCubilose\BLL\bin\Release\Entity.pdb
+C:\新建文件夹\MeetMissCubilose\BLL\bin\Release\ViewModel.pdb
+C:\新建文件夹\MeetMissCubilose\BLL\bin\Release\Wx_DAL.pdb
+C:\新建文件夹\MeetMissCubilose\BLL\bin\Release\Newtonsoft.Json.xml
+C:\新建文件夹\MeetMissCubilose\BLL\obj\Release\BLL.csprojResolveAssemblyReference.cache
+C:\新建文件夹\MeetMissCubilose\BLL\obj\Release\Wx_BLL.dll
+C:\新建文件夹\MeetMissCubilose\BLL\obj\Release\Wx_BLL.pdb

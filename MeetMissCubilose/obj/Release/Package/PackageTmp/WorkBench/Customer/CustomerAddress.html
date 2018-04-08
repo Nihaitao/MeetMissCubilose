@@ -1,0 +1,126 @@
+﻿<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="https://apps.bdimg.com/libs/jquerymobile/1.4.5/jquery.mobile-1.4.5.min.css">
+    <link rel="stylesheet" href="../../themes/skyd.min.css" />
+    <link rel="stylesheet" href="../../themes/jquery.mobile.icons.min.css" />
+    <link rel="stylesheet" href="https://code.jquery.com/mobile/1.4.3/jquery.mobile.structure-1.4.3.min.css" />
+    <script src="https://apps.bdimg.com/libs/jquery/1.10.2/jquery.min.js"></script>
+    <script src="https://apps.bdimg.com/libs/jquerymobile/1.4.5/jquery.mobile-1.4.5.min.js"></script>
+    <title>收货地址管理</title>
+    <stytle>
+
+    </stytle>
+    <script>        
+        $(document).on("pagecreate", "#pageAddr", function () {
+            var customerId = localStorage.getItem("CustomerID");
+            $.get("/api/Customer/GetCustomerAddressList", { customerId: customerId }, function (rsp) {
+                var html = "";
+                if (rsp != null || rsp != undefined) {
+                    $.each(rsp, function (i) {
+                        if (rsp[i].serial == 1) {
+                            html += "<li data-icon='location'><span style='display:none;float:right;background-color:#FF0000;color:#ffffff;width:20%;height:102px;text-align:center;line-height:100px;'>删 除</span>";
+                            html += "<a href='' data-id='" + rsp[i].addr_id + "'><p style='float:right'>[默认地址]</p><h2>" + rsp[i].person + "</h2><p>电话：" + rsp[i].phone + "</p><p>地址：" + rsp[i].address + "</p></a></li>";
+                        }
+                        else {
+                            html += "<li data-icon='location'><span style='display:none;float:right;background-color:#FF0000;color:#ffffff;width:20%;height:102px;text-align:center;line-height:100px;'>删 除</span>";
+                            html += "<a href='' data-id='" + rsp[i].addr_id + "'><h2>" + rsp[i].person + "</h2><p>电话：" + rsp[i].phone + "</p><p>地址：" + rsp[i].address + "</p></a></li>";
+                        }
+                    });
+                }
+                $("#addressList").html(html).listview('refresh');
+            });
+
+            //绑定向左滑动列表事件
+            $("#addressList").on("swipeleft", "a", function () {
+                $(this).siblings("span").show();
+            });
+            //绑定向右滑动列表事件
+            $("#addressList").on("swiperight", "a", function () {
+                $(this).siblings("span").hide();
+            });
+            //绑定点击删除事件
+            $("#addressList").on("tap", "span", function () {
+                var addrId = $(this).siblings("a").attr("data-id");
+                var item = $(this).parent();
+                $.post("/api/Customer/DeleteCustomerAddress", { addrId: addrId }, function (rsp) {
+                    if (rsp == "成功") {
+                        $("#addressPopup").html("<p>操作成功！</p>");
+                        $("#addrpopup").click();
+                        item.remove();//删除页面元素
+                    } else {
+                        $("#addressPopup").html("<p>操作失败,请重试！</p>");
+                        $("#addrpopup").click();
+                    }
+                });
+            });
+        });
+
+        $(document).on("pagecreate", "#pageNewAddr", function () {
+            var customerId = localStorage.getItem("CustomerID");
+            $("#newAddrBtn").on("tap", function () {
+                var person = $("#person").val();
+                var phone = $("#phone").val();
+                var address = $("#address").val();
+                var serial = $("#defaultAddr").prop("checked") ? 1 : 0;
+                if (person == "" || phone == "" || address == "") {
+                    $("#addrNewPopup").html("<p>输入的内容不能为空</p>");
+                    $("#newpopup").click();
+                    setTimeout('$("#addrNewPopup").popup("close")', 1000);
+                }else {
+                    $.post("/api/Customer/AddCustomerAddress", { customerId: customerId, person: person, phone: phone, address: address, serial: serial }, function (rsp) {
+                        if (rsp == "成功") {
+                            $("#addrNewPopup").html("<p>添加成功！</p>");
+                            $("#newpopup").click();
+                            setTimeout('location.href = "../Customer/CustomerAddress.html"', 1200);
+                        } else {
+                            $("#addrNewPopup").html("<p>添加失败,请重试！</p>");
+                            $("#newpopup").click();
+                        }
+                    });
+                }                
+            });
+        });
+    </script>
+</head>
+<body>
+    <!--地址页面-->
+    <div data-role="page" id="pageAddr">
+        <div data-role="header" data-position="fixed" data-add-back-btn="true">
+            <a href="../Customer/Customer.html#pagePersonalData" class="ui-btn-left" data-icon="arrow-l" data-ajax="false">个人资料</a>
+            <h1>管理收货地址</h1>
+            <a href="#pageNewAddr" class="ui-btn-right" data-icon="plus">添加</a>
+        </div>
+        <div data-role="main" class="ui-content">
+            <ul data-role="listview" id="addressList"></ul>
+        </div>
+        <!--提示框-->
+        <a href="#addressPopup" data-rel="popup" id="addrpopup" style="display:none" data-position-to="window"></a>
+        <div data-role="popup" id="addressPopup"></div>
+        <div data-role="footer" style="text-align: center" data-position="fixed">
+            <p>CopyRight &copy;MeetMissCubilose</p>
+        </div>  
+    </div>
+
+    <div data-role="page" id="pageNewAddr">
+        <div data-role="header" data-position="fixed" data-add-back-btn="true">
+            <h1>添加收货地址</h1>
+        </div>
+        <div data-role="main" class="ui-content">
+            <label for="person">姓名：</label>
+            <input type="text" name="person" id="person">
+            <label for="phone">电话：</label>
+            <input type="tel" name="phone" id="phone">
+            <label for="address">地址：</label>
+            <textarea id="address"></textarea>
+            <label for="defaultAddr">默认地址</label>
+            <input type="checkbox" name="defaultAddr" id="defaultAddr">
+            <input type="button" id="newAddrBtn" value="保存">
+        </div>
+        <!--提示框-->
+        <a href="#addrNewPopup" data-rel="popup" id="newpopup" style="display:none" data-position-to="window"></a>
+        <div data-role="popup" id="addrNewPopup"></div>
+        <div data-role="footer" style="text-align: center" data-position="fixed">
+            <p>CopyRight &copy;MeetMissCubilose</p>
+        </div>
+    </div>
+</body>

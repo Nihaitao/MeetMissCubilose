@@ -1,0 +1,13 @@
+C:\新建文件夹\MeetMissCubilose\DAL\bin\Release\Wx_DAL.dll
+C:\新建文件夹\MeetMissCubilose\DAL\bin\Release\Wx_DAL.pdb
+C:\新建文件夹\MeetMissCubilose\DAL\bin\Release\Common.dll
+C:\新建文件夹\MeetMissCubilose\DAL\bin\Release\DbAttribute.dll
+C:\新建文件夹\MeetMissCubilose\DAL\bin\Release\Entity.dll
+C:\新建文件夹\MeetMissCubilose\DAL\bin\Release\Newtonsoft.Json.dll
+C:\新建文件夹\MeetMissCubilose\DAL\bin\Release\Common.pdb
+C:\新建文件夹\MeetMissCubilose\DAL\bin\Release\DbAttribute.pdb
+C:\新建文件夹\MeetMissCubilose\DAL\bin\Release\Entity.pdb
+C:\新建文件夹\MeetMissCubilose\DAL\bin\Release\Newtonsoft.Json.xml
+C:\新建文件夹\MeetMissCubilose\DAL\obj\Release\DAL.csprojResolveAssemblyReference.cache
+C:\新建文件夹\MeetMissCubilose\DAL\obj\Release\Wx_DAL.dll
+C:\新建文件夹\MeetMissCubilose\DAL\obj\Release\Wx_DAL.pdb

@@ -1,0 +1,159 @@
+﻿
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="https://apps.bdimg.com/libs/jquerymobile/1.4.5/jquery.mobile-1.4.5.min.css">
+    <link rel="stylesheet" href="themes/skyd.min.css" />
+    <link rel="stylesheet" href="themes/jquery.mobile.icons.min.css" />
+    <link rel="stylesheet" href="https://code.jquery.com/mobile/1.4.3/jquery.mobile.structure-1.4.3.min.css" />
+    <script src="https://apps.bdimg.com/libs/jquery/1.10.2/jquery.min.js"></script>
+    <script src="https://apps.bdimg.com/libs/jquerymobile/1.4.5/jquery.mobile-1.4.5.min.js"></script>
+    <title>账号登陆</title>
+
+    <script>
+        $(document).on("pagecreate", "#pageLogin", function () {
+            localStorage.clear();
+            //绑定登陆按钮
+            $("#login").on("tap", function () {
+                var name = $("#name").val();
+                var password = $("#password").val();
+                if (name == "" || name == null || name == undefined) {
+                    $("#myPopup").html("<p>登陆名不能为空！</p>");
+                    $("#popup").click();
+                    setTimeout('$("#myPopup").popup("close")', 1000);
+                } else if (password == "" || password == null || password == undefined) {
+                    $("#myPopup").html("<p>密码不能为空！</p>");
+                    $("#popup").click();
+                    setTimeout('$("#myPopup").popup("close")', 1000);
+                } else {
+                    $.get("/api/Login/Login", { name: name, password: password }, function (rsp) {
+                        if (rsp == "失败") {
+                            $("#myPopup").html("<p>登陆名或密码错误！</p>");
+                            $("#popup").click();
+                            setTimeout('$("#myPopup").popup("close")', 1000);
+                        }
+                        else {
+                            if (rsp.manager != null || rsp.manager != undefined) {
+                                localStorage.setItem("ManagerID", rsp.manager.mgr_id);
+                                localStorage.setItem("ManagerName", rsp.manager.mgr_name);
+                                location.href = "home.html";
+                            }
+                            else if (rsp.customer != null || rsp.customer != undefined) {
+                                localStorage.setItem("CustomerID", rsp.customer.cu_id);
+                                localStorage.setItem("CustomerName", rsp.customer.cu_name);
+                                location.href = "/WorkBench/Product/Product.html";
+                            }
+                        }
+                    });
+                }
+            })
+        });
+            
+        $(document).on("pagecreate", "#pageRegister", function () {
+            //绑定注册按钮
+            $("#register").on("tap", function () {
+                var name1 = $("#name1").val();
+                var password1 = $("#password1").val();
+                var password2 = $("#password2").val();
+                if (name1 == "" || name1 == null || name1 == undefined) {
+                    $("#myPopup2").html("<p>账号不能为空！</p>");
+                    $("#popup2").click();
+                    setTimeout('$("#myPopup2").popup("close")', 1000);
+                } else if (name1.length < 6) {
+                    $("#myPopup2").html("<p>账号长度不能低于6个字符！</p>");
+                    $("#popup2").click();
+                    setTimeout('$("#myPopup2").popup("close")', 1000);
+                } else if (password1 == "" || password1 == null || password1 == undefined) {
+                    $("#myPopup2").html("<p>密码不能为空！</p>");
+                    $("#popup2").click();
+                    setTimeout('$("#myPopup2").popup("close")', 1000);
+                } else if (password1.length < 6) {
+                    $("#myPopup2").html("<p>密码长度不能低于6个字符！</p>");
+                    $("#popup2").click();
+                    setTimeout('$("#myPopup2").popup("close")', 1000);
+                } else if (password1 != password2) {
+                    $("#myPopup2").html("<p>两次输入的密码不一致！</p>");
+                    $("#popup2").click();
+                    setTimeout('$("#myPopup2").popup("close")', 1000);
+                } else {
+                    $.post("/api/Login/Register", { name: name1, password: password1 }, function (rsp) {
+                        $("#myPopup2").html("<p>" + rsp + "</p>");
+                        $("#popup2").click();
+                        if (rsp == "注册成功")
+                            setTimeout('location.href = "#pageLogin"', 1200);
+                    });
+                }
+            });
+        });  
+    </script>
+</head>
+<body>
+    <!--登陆页面-->
+    <div data-role="page" id="pageLogin">
+        <div data-role="header">
+            <h1 role="heading">Welcomee to MeetMissCubilose</h1>
+        </div>
+        <div data-role="main" class="ui-content">
+            <div data-role="controlgroup">
+                <nav data-role="navbar">
+                    <ul>
+                        <li><a href="#" class="ui-btn-b">登陆</a></li>
+                        <li><a href="#pageRegister">注册</a></li>
+                    </ul>
+                </nav>
+            </div>
+            <div>
+                <br />
+                <label for="name">账&nbsp;号:</label>
+                <input type="text" name="name" id="name">
+                <br />
+                <label for="password">密&nbsp;码:</label>
+                <input type="password" name="password" id="password">
+            </div>
+            <div style="margin-top: 20%;">
+                <a href="#" data-role="button" id="login">登录</a>
+            </div>
+            <!--提示框-->
+            <a href="#myPopup" data-rel="popup" id="popup" style="display:none" data-position-to="window"></a>
+            <div data-role="popup" id="myPopup"></div>
+        </div>
+        <div data-role="footer" style="text-align: center" data-position="fixed">
+            <p>CopyRight &copy;MeetMissCubilose</p>
+        </div>
+    </div>
+    <!--注册页面-->
+    <div data-role="page" id="pageRegister">
+        <div data-role="header">
+            <h1 role="heading">Welcomee to MeetMissCubilose</h1>
+        </div>
+        <div data-role="main" class="ui-content">
+            <div data-role="controlgroup">
+                <nav data-role="navbar">
+                    <ul>
+                        <li><a href="#pageLogin">登陆</a></li>
+                        <li><a href="#" class="ui-btn-b">注册</a></li>
+                    </ul>
+                </nav>
+            </div>
+            <div class="ui-field-contain">
+                <br />
+                <label for="name">账&nbsp;号:</label>
+                <input type="text" name="name" id="name1">
+                <br />
+                <label for="password">密&nbsp;码:</label>
+                <input type="password" name="password" id="password1">
+                <br />
+                <label for="password">确认密码:</label>
+                <input type="password" name="password" id="password2">
+            </div>
+            <div style="margin-top: 20%;">
+                <a href="#" data-role="button" id="register">注册</a>
+            </div>
+            <!--提示框-->
+            <a href="#myPopup2" data-rel="popup" id="popup2" style="display:none" data-position-to="window"></a>
+            <div data-role="popup" id="myPopup2"></div>
+        </div>
+        <div data-role="footer" style="text-align: center" data-position="fixed">
+            <p>CopyRight &copy;MeetMissCubilose</p>
+        </div>
+    </div>
+</body>
